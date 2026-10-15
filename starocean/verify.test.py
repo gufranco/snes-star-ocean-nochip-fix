@@ -237,13 +237,6 @@ class MainTest(unittest.TestCase):
 
 
 class CommandTest(unittest.TestCase):
-    """The installed console command, which is the only caller of sys.argv here.
-
-    It exists so that a shell can run this without knowing the module layout, and
-    it is one line, and that line is the difference between exiting with what the
-    run decided and exiting with zero regardless.
-    """
-
     def test_it_exits_with_what_the_run_decided(self) -> None:
         with tempfile.TemporaryDirectory() as empty:
             argv = [sys.argv[0], empty, empty]

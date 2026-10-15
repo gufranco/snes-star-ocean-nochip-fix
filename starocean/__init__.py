@@ -1,22 +1,3 @@
-"""Correct the header of two Star Ocean rebuilds that no longer carry a chip.
-
-Star Ocean shipped on an S-DD1 board. neviksti's Star Ocean no S-DD1/96Mbit hack
-decompresses the graphics ahead of time and rebuilds the cartridge at ninety six
-megabit, so the chip is not needed. Both rebuilds still declare it, and both
-declare eight megabytes while being twelve.
-
-Twelve bytes per image fix that, six in each of two header mirrors. None of the
-arithmetic lives here: `snes-rom-image` rewrites the mirrors and recomputes the
-checksum, `snes-mapper` decides where a header sits, and both are submodules.
-What is here is the checking either side of that, and the table of what every
-file in the chain should be.
-
-Two entry points, and the difference between them is whether anything is written.
-
-    from starocean import look, report      # reads only, says what is here
-    from starocean import apply, run        # confirm, correct, confirm, write
-"""
-
 from . import editions as editions
 from . import errors as errors
 from . import fix as fix

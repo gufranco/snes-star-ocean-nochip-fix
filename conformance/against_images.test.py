@@ -1,15 +1,3 @@
-"""The checks that need the real images, which is why they live apart.
-
-A skipped test contributes no coverage, so on a runner with an empty directory
-every line here would read as uncovered and fail the coverage gate for a reason
-that has nothing to do with the code. Keeping them in one file lets that file sit
-outside the gate while everything else stays inside it.
-
-What they prove is the thing the unit tests cannot: that the digests written down
-in the manifest are the digests these two files actually have, and that correcting
-them really does produce what was promised. Everything else is a stand-in.
-"""
-
 import sys
 import tempfile
 import unittest

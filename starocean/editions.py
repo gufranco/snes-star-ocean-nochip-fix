@@ -1,25 +1,3 @@
-"""The two images this corrects, named, and pinned at both ends.
-
-Star Ocean shipped on an S-DD1 board, which decompressed graphics on the way to
-the console. Somebody else did the work of decompressing all of it ahead of time
-and rebuilding the cartridge at ninety six megabit, so the chip is no longer doing
-anything. Two of those rebuilds exist, one Japanese and one carrying the English
-translation, and both still say in their header that an S-DD1 is fitted.
-
-The header is also short by a size: both declare eight megabytes while being
-twelve. That was already wrong before anyone touched the file, because the field
-holds a power of two and there is no power of two at twelve.
-
-Neither rebuild is work anyone should redo. The correction is six bytes per header
-mirror, and what is pinned is the whole result: four digests of the image that goes
-in and four of the image that comes out. A run producing anything else has done
-something other than what this describes, and says so rather than writing.
-
-The table itself is data rather than code. Filenames and digests are the two things
-most likely to need a correction of their own, and a table nobody has to read
-Python to check is easier to correct.
-"""
-
 import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -38,16 +16,9 @@ DECIDES = "sha256"
 DIGEST_WIDTHS = {"crc32": 8, "md5": 32, "sha1": 40, "sha256": 64}
 
 EXPECTED_BYTES = 0xC00000
-"""Twelve megabytes.
-
-Both rebuilds are exactly this, and the map they use has no other size: its window
-only sits inside the file at 192 banks.
-"""
 
 
 class Patch:
-    """The hack the two images are built with, and where to find it."""
-
     __slots__ = ("archive", "author", "name", "note", "version", "where")
 
     def __init__(
@@ -72,8 +43,6 @@ class Patch:
 
 
 class Step:
-    """One file in the chain, and whether this repository is what makes it."""
-
     __slots__ = ("held", "name", "produced", "what")
 
     def __init__(
@@ -99,8 +68,6 @@ class Step:
 
 
 class Edition:
-    """One rebuild: what it is, what it is read from, and what it becomes."""
-
     __slots__ = ("after", "before", "name", "patch", "reads", "size", "source", "summary", "writes")
 
     def __init__(
@@ -126,11 +93,6 @@ class Edition:
         self.patch = patch
 
     def chain(self) -> tuple[Step, ...]:
-        """Every file between a cartridge somebody owns and what this writes.
-
-        In the order it is walked, which is also the order somebody without any of
-        it has to obtain things. Only the last step is one this repository makes.
-        """
         return (
             Step("source", self.source["name"], self.source),
             Step("patch", self.patch["name"], self.patch),
@@ -144,7 +106,6 @@ class Edition:
 
 
 def load_patch(path: Path | str | None = None) -> Patch:
-    """What the manifest says about the hack both images are built with."""
     with Path(path or MANIFEST).open() as handle:
         held = json.load(handle)["patch"]
     return Patch(
@@ -158,7 +119,6 @@ def load_patch(path: Path | str | None = None) -> Patch:
 
 
 def load(path: Path | str | None = None) -> tuple[Edition, ...]:
-    """Every edition the manifest lists, in the order it lists them."""
     with Path(path or MANIFEST).open() as handle:
         held = json.load(handle)
     return tuple(
@@ -183,7 +143,6 @@ PATCH = load_patch()
 
 
 def matching(digest: str, among: Sequence[Edition] | None = None) -> Edition | None:
-    """The edition an image with that deciding digest is, or nothing."""
     for edition in EDITIONS if among is None else among:
         if edition.before[DECIDES] == digest:
             return edition
@@ -191,7 +150,6 @@ def matching(digest: str, among: Sequence[Edition] | None = None) -> Edition | N
 
 
 def named(name: str, among: Sequence[Edition] | None = None) -> Edition:
-    """The edition of that name."""
     among = EDITIONS if among is None else among
     for edition in among:
         if edition.name == name:

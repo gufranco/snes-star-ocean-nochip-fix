@@ -1,12 +1,3 @@
-"""Hold this package's two constants to hardware.json, and to their standing.
-
-Almost nothing is pinned here, because almost nothing belongs here: what a header
-means is pinned in snes-rom-image-python against Nintendo's manual, and copying
-it would make a second source of truth that drifts. What is left is the image
-length and the size byte that follows from it, and this holds both to the record
-and to every edition in the manifest.
-"""
-
 import json
 import sys
 import unittest
@@ -95,8 +86,6 @@ class ConstantTest(unittest.TestCase):
 
 
 class ManifestTest(unittest.TestCase):
-    """The digests, which are what makes this safe to run without watching it."""
-
     def test_every_edition_names_a_file_before_and_after(self) -> None:
         missing = [
             edition.name for edition in editions.EDITIONS if not (edition.reads and edition.writes)

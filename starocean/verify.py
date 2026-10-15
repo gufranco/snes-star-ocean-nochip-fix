@@ -1,20 +1,3 @@
-"""Say what is on disk and whether it is what it claims, and write nothing.
-
-Running the correction to find out whether your files are right costs a read and
-a write of twelve megabytes each, and leaves a file behind whether or not you
-wanted one. This answers the same question by reading only.
-
-It looks for every step of the chain rather than only the image the correction
-consumes, because "this is not the one named" is an unhelpful thing to be told
-when the real answer is that the wrong patch was applied two steps earlier. A
-report naming which link is wrong points at the step to redo.
-
-Four states, and the difference between the middle two is the point. A file the
-manifest does not recognise at all was built from something else. A file matching
-the deciding digest but not the rest means the manifest disagrees with itself,
-which is a defect here rather than in anybody's copy.
-"""
-
 import hashlib
 import sys
 import zlib
@@ -42,12 +25,9 @@ DEFAULT_SOURCE = ROOT / "roms"
 DEFAULT_DESTINATION = ROOT / "dist"
 
 SHOWN = 16
-"""How much of a computed digest a report prints: enough to search for."""
 
 
 class Finding:
-    """One step of one edition, and what was found where it belongs."""
-
     __slots__ = ("edition", "found", "path", "state", "step")
 
     def __init__(
@@ -79,7 +59,6 @@ def digests_of(image: bytes) -> dict[str, str]:
 
 
 def _somewhere_under(where: Path | str, name: str) -> Path:
-    """The named file directly in a directory, or anywhere beneath it."""
     direct = Path(where) / name
     if direct.is_file() or not Path(where).is_dir():
         return direct
@@ -104,7 +83,6 @@ def look(
     catalogue: Sequence[editions.Edition] | None = None,
     destination: Path | str | None = None,
 ) -> list[Finding]:
-    """Every step of every edition, and what sits where it belongs."""
     source = DEFAULT_SOURCE if source is None else Path(source)
     destination = DEFAULT_DESTINATION if destination is None else Path(destination)
     catalogue = editions.EDITIONS if catalogue is None else catalogue
@@ -123,7 +101,6 @@ def look(
 
 
 def report(findings: Sequence[Finding]) -> list[str]:
-    """One line per finding, in the words a person reads."""
     lines = []
     for one in findings:
         line = f"  {one.edition.name}: {one.step.what} {one.state}, {one.step.name}"
@@ -134,7 +111,6 @@ def report(findings: Sequence[Finding]) -> list[str]:
 
 
 def verdict(findings: Sequence[Finding]) -> str:
-    """Whether what is here is sound, wrong, or not here at all."""
     if any(one.state in (ALTERED, CORRUPT) for one in findings):
         return WRONG
     if any(one.state == MATCHES for one in findings):
@@ -162,7 +138,6 @@ def main(argv: Sequence[str], catalogue: Sequence[editions.Edition] | None = Non
 
 
 def command() -> None:
-    """The installed console command, which takes its arguments from the shell."""
     raise SystemExit(main(sys.argv[1:]))
 
 

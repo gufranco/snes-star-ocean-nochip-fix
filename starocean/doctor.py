@@ -1,49 +1,3 @@
-"""Look at this machine and say what is actually here, so a report can be believed.
-
-What goes wrong with this package is rarely a defect in it. It is a submodule
-that was never checked out, or an image somebody supplied that is a link earlier
-in the chain than the one this reads. Both look the same from outside: nothing
-happens and it is not obvious why.
-
-The submodule is the sharp one. What a header means is not this package's claim;
-it is `snes-rom-image-python`, carried here as a submodule and imported by name.
-A checkout without `--recurse-submodules` leaves the directory there and empty,
-and what fails is an import rather than a check, which reads as a broken package
-rather than an incomplete checkout.
-
-Where this stops and `verify` begins is worth stating. `verify` answers whether
-the files a reader holds are the files the manifest names, one line per link of
-the chain. This answers whether the machine can do anything at all, and then
-says how many of those files are here. A reader with no images gets a complete
-report from this and an empty one from `verify`.
-
-Two rules shape it, and they are the whole point.
-
-Nothing is hidden. A check that fails says what it saw, and a check that itself
-throws is caught and reported as what it threw, named by its type. An absent
-library is reported as absent rather than as a failure, because a fresh checkout
-has none and that is the normal state, but it is never reported as nothing at all.
-
-Nothing is imported from the package at the top of this file, and that is
-deliberate rather than tidy. This package imports `snes-rom-image-python` by name,
-so on the machine this exists to diagnose, a checkout with no submodule,
-importing it here would fail before a single finding was printed. The reader
-would get a traceback naming a module they have never heard of instead of a line
-telling them to fetch the submodule.
-
-Which is also why this is run as a file rather than with `-m`. Either form has to
-read the package's `__init__` first, and that is the import that fails. Run it as
-
-    python3 starocean/doctor.py
-
-and everything that can fail happens inside a finding, where its failure is the
-report rather than the end of it.
-
-Nothing is inferred. Every line is something looked at on this machine just now,
-including every file of every chain, looked for on disk rather than assumed from
-what a manifest says should be there.
-"""
-
 from __future__ import annotations
 
 import json
@@ -58,11 +12,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def _version(where: Path | None = None) -> str:
-    """The package version, read out of the file beside this one.
-
-    Read rather than imported. Importing it would go through the package, and
-    the package is what fails on the machine this exists to diagnose.
-    """
     found = re.search(
         r"""VERSION\s*[:=][^"']*["']([^"']+)["']""",
         (where or Path(__file__).resolve().parent / "version.py").read_text(),
@@ -83,10 +32,8 @@ SOURCE = ROOT / "roms"
 DESTINATION = ROOT / "dist"
 
 WRITES = "writes"
-"""The one step of a chain that is looked for where it is written, not where it is read."""
 
 STEPS = 4
-"""Source cartridge, patch, decompressed image, corrected image."""
 
 SUBMODULES = ("snes-rom-image-python",)
 
@@ -94,8 +41,6 @@ OLDEST_PYTHON = (3, 12)
 
 
 class Finding:
-    """One thing that was looked at, and what was there."""
-
     __slots__ = ("advice", "detail", "name", "ok")
 
     def __init__(self, name: str, ok: bool, detail: str, advice: str | None = None) -> None:
@@ -106,12 +51,10 @@ class Finding:
 
     @property
     def line(self) -> str:
-        """The one-line form, which is what a reader scans."""
         return f"  {'ok  ' if self.ok else '   !'}  {self.name}: {self.detail}"
 
     @property
     def report(self) -> str:
-        """The same, with what to do about it when there is something to do."""
         if self.ok or not self.advice:
             return self.line
         return f"{self.line}\n         {self.advice}"
@@ -135,14 +78,6 @@ def _package() -> Finding:
 
 
 def _loaded() -> Any:
-    """The package, imported now rather than when this file was read.
-
-    Imported by name rather than relatively, and with the repository put on the
-    path first, because this file is run as a script and a relative import has
-    no package to be relative to. A single place for it, so every finding fails
-    the same way when the submodule is absent and the failure is a line in the
-    report rather than a traceback in place of one.
-    """
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     from starocean import editions, verify
@@ -151,7 +86,6 @@ def _loaded() -> Any:
 
 
 def _editions() -> Finding:
-    """Which editions this correction knows, and that each one names a full chain."""
     try:
         editions, _ = _loaded()
         held = editions.EDITIONS
@@ -174,12 +108,6 @@ def _editions() -> Finding:
 
 
 def _chain() -> list[Finding]:
-    """Every link of every chain, and whether the file is on this machine.
-
-    One line per link rather than one per edition, because the answer a reader
-    needs is which step to redo. An edition reported only as absent sends them
-    back to the beginning of a four step chain.
-    """
     try:
         editions, _ = _loaded()
         held = editions.EDITIONS
@@ -203,12 +131,6 @@ def _chain() -> list[Finding]:
 
 
 def _submodule(name: str, root: Path = ROOT) -> Finding:
-    """Whether a submodule is checked out, since its absence is silent otherwise.
-
-    The marker is the manifest rather than the directory. Git creates the empty
-    directory for a submodule it has not fetched, so a check on the path alone
-    reports a present submodule on exactly the machine where it is missing.
-    """
     where = root / name
     if (where / "pyproject.toml").is_file():
         return Finding(f"submodule {name}", True, f"checked out at {where}")
@@ -222,7 +144,6 @@ def _submodule(name: str, root: Path = ROOT) -> Finding:
 
 
 def _manifest(path: Path | str = MANIFEST) -> Finding:
-    """What the manifest pins, or why it could not be read."""
     try:
         held = json.loads(Path(path).read_text())
     except OSError as trouble:
@@ -256,7 +177,6 @@ def _manifest(path: Path | str = MANIFEST) -> Finding:
 
 
 def _source(where: Path = SOURCE) -> Finding:
-    """Where images are looked for, and whether anything is there."""
     if not where.is_dir():
         return Finding(
             "images",
@@ -281,7 +201,6 @@ def examine(
     root: Path = ROOT,
     source: Path = SOURCE,
 ) -> list[Finding]:
-    """Everything worth looking at on this machine, in the order a reader wants it."""
     return [
         _python(),
         _package(),
@@ -294,7 +213,6 @@ def examine(
 
 
 def report(found: Sequence[Finding]) -> list[str]:
-    """The lines a person pastes into an issue."""
     unwell = [one for one in found if not one.ok]
     lines = [f"starocean {VERSION} on {platform.python_version()}, {platform.system()}", ""]
     lines.append("  the machine")

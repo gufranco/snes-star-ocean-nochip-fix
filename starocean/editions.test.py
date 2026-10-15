@@ -81,13 +81,6 @@ class DigestTest(unittest.TestCase):
 
 
 class ChainTest(unittest.TestCase):
-    """Every file between a cartridge somebody owns and the corrected image.
-
-    Pinning only the patched image tells a reader what to end up with and nothing
-    about how to get there. The chain is the retail cartridge, the patch applied
-    to it, the image that produces, and the image this writes.
-    """
-
     def test_the_patch_is_named_with_its_author_and_where_it_lives(self) -> None:
         self.assertEqual(editions.PATCH.author, "neviksti")
         self.assertTrue(editions.PATCH.where.startswith("https://"))
@@ -209,14 +202,6 @@ class LookupTest(unittest.TestCase):
 
 
 class DecidingDigestTest(unittest.TestCase):
-    """That the manifest tells a reader which of its four digests decides.
-
-    The module already knows: `DECIDES` names it and nothing else is compared
-    against. A person cross-checking a copy reads the manifest rather than the
-    module, so the manifest has to say it too, and this is what keeps the two
-    from drifting apart.
-    """
-
     def held(self) -> str:
         return str(json.loads(editions.MANIFEST.read_text())["decides"])
 

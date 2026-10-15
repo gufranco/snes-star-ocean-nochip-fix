@@ -55,15 +55,6 @@ class ExportTest(unittest.TestCase):
 
 
 class PackagingTest(unittest.TestCase):
-    """That this repository ships no packaging block, which is deliberate.
-
-    It consumes `snes-rom-image` as a submodule rather than as a version range.
-    A wheel built from here installs cleanly and then raises on its first import,
-    because the submodule is not in it and cannot be, so a `[project]` block
-    would let somebody `pip install git+...` and receive exactly that. The readme
-    says the same thing in prose, and the two commands are run as files.
-    """
-
     @override
     def setUp(self) -> None:
         with (ROOT / "pyproject.toml").open("rb") as handle:

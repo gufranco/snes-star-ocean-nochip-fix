@@ -1,21 +1,3 @@
-"""Read an image, confirm it is the one named, correct it, confirm the result.
-
-The correction is small and someone else's packages do all of it: `snes-mapper`
-decides where the header sits and `snes-rom-image` rewrites every mirror of it and
-recomputes the checksum. What is left here is the part that makes the small change
-safe to run unattended, which is checking at both ends.
-
-The order matters and is the whole design. An image is confirmed against four
-digests before anything touches it, so a file that is not the one named never
-reaches the rewrite. The result is confirmed against four more before it is
-written, so a rewrite that produced something unforeseen ends as a refusal rather
-than as a file on disk that looks finished.
-
-Neither check is a formality. A header rewrite that goes wrong produces a file of
-exactly the right length that boots into nothing, and the only cheap way to tell
-that apart from a correct one is to have written down beforehand what correct is.
-"""
-
 import hashlib
 import os
 import sys
@@ -40,54 +22,16 @@ DIRECTORY_VARIABLE = "STAR_OCEAN_ROM_DIR"
 DEFAULT_SOURCE = ROOT / "roms"
 
 ALONGSIDE = ROOT.parent / "roms"
-"""Where a project carrying this one as a submodule keeps its own cartridges.
-
-Standalone, the directory in this repository is the one that matters. Vendored
-into something larger, the parent owns the library, and neither side should have
-to be told about the other for the same files to be found.
-"""
 
 DEFAULT_DESTINATION = ROOT / "dist"
 
 
 DIRECTORY_VARIABLES = (DIRECTORY_VARIABLE,)
-"""Every variable naming a directory, most specific first.
-
-One here, and a tuple anyway, because this is the shared rule below and a member
-that grows a second variable should not have to change the rule to get it.
-"""
 
 DEFAULT_DIRECTORY = DEFAULT_SOURCE
-"""The name the shared rule below uses for the folder in this repository.
-
-`DEFAULT_SOURCE` is the name a reader wants here, because it pairs with
-`DEFAULT_DESTINATION`. The rule is byte-identical across every member that reads
-a file it does not carry, so it cannot know about that pairing, and one alias
-costs less than a rule that is nearly the same everywhere.
-"""
 
 
 def directories(environment: Mapping[str, str] | None = None) -> tuple[Path, ...]:
-    """Every place an image is looked for, in the order they are looked at.
-
-    Whatever was named comes first, then the project this package sits inside if
-    it is a submodule of one, then this package itself. More than one can be
-    named at once, separated the way the operating system separates a path.
-
-    `DIRECTORY_VARIABLES` is read in order, so a member that shares a variable
-    with a sibling reads its own name first and the shared one after it. A
-    caller who has set only the shared name keeps working; a caller who sets
-    both points the two members at different directories, which is the whole
-    reason the member's own name exists.
-
-    This function is one rule with a copy in every member that reads a file it
-    does not carry, because no package is a dependency of all of them. The
-    copies are byte-identical below the constants and are meant to stay that
-    way, so a diff against a sibling is the check:
-
-        cut='/^def directories/,/^    return tuple(seen)/p'
-        diff <(sed -n "$cut" mine/thing.py) <(sed -n "$cut" theirs/thing.py)
-    """
     held = environment if environment is not None else os.environ
     wanted = [
         Path(where)
@@ -106,12 +50,6 @@ def directories(environment: Mapping[str, str] | None = None) -> tuple[Path, ...
 def source_directory(
     environment: Mapping[str, str] | None = None, places: Sequence[Path] | None = None
 ) -> Path:
-    """Where the images are read from: what was named, or the folder in here.
-
-    A named directory wins even when it turns out to be empty. Quietly falling back
-    from a path somebody typed turns their typo into a run that skips everything
-    and reports that nothing needed doing.
-    """
     named = (environment if environment is not None else os.environ).get(DIRECTORY_VARIABLE)
     if named:
         return Path(named)
@@ -122,7 +60,6 @@ def source_directory(
 
 
 def digests_of(image: bytes) -> dict[str, str]:
-    """Every digest the manifest pins, for one image."""
     return {
         "crc32": f"{zlib.crc32(image) & 0xFFFFFFFF:08x}",
         "md5": hashlib.md5(image).hexdigest(),
@@ -132,7 +69,6 @@ def digests_of(image: bytes) -> dict[str, str]:
 
 
 def correct(image: bytes) -> bytes:
-    """The same image declaring no coprocessor, its real size, and a live checksum."""
     try:
         corrected: bytes = rewrite.declare_rom_only(image)
         return corrected
@@ -144,7 +80,6 @@ def correct(image: bytes) -> bytes:
 
 
 def confirm(image: bytes, edition: editions.Edition) -> editions.Edition:
-    """That this really is the image the edition names, before anything is changed."""
     if len(image) != edition.size:
         raise Unrecognised(
             f"{edition.name} is {edition.size} bytes and this is {len(image)}."
@@ -166,12 +101,6 @@ def confirm(image: bytes, edition: editions.Edition) -> editions.Edition:
 
 
 def _cross_check(name: str, pinned: Mapping[str, str], found: Mapping[str, str]) -> None:
-    """The other three digests have to agree as well.
-
-    Reaching here means the deciding digest already matched, so a disagreement is
-    not a different file: it is a manifest contradicting itself, which is worth
-    saying out loud rather than passing over.
-    """
     for digest in editions.DIGESTS:
         if digest == editions.DECIDES or digest not in pinned:
             continue
@@ -185,7 +114,6 @@ def _cross_check(name: str, pinned: Mapping[str, str], found: Mapping[str, str])
 
 
 def apply(image: bytes, edition: editions.Edition) -> bytes:
-    """Confirm, correct, confirm again, and hand back the bytes."""
     confirm(image, edition)
     produced = correct(image)
     found = digests_of(produced)
@@ -203,7 +131,6 @@ def apply(image: bytes, edition: editions.Edition) -> bytes:
 
 
 def run(edition: editions.Edition, source: Path | str, destination: Path | str) -> Path:
-    """Correct one edition from a directory into a directory."""
     reading = Path(source) / edition.reads
     if not reading.is_file():
         raise Missing(
@@ -249,7 +176,6 @@ def main(argv: Sequence[str], catalogue: Sequence[editions.Edition] | None = Non
 
 
 def command() -> None:
-    """The installed console command, which takes its arguments from the shell."""
     raise SystemExit(main(sys.argv[1:]))
 
 

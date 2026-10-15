@@ -308,13 +308,6 @@ class MainTest(unittest.TestCase):
 
 
 class CommandTest(unittest.TestCase):
-    """The installed console command, which is the only caller of sys.argv here.
-
-    It exists so that a shell can run this without knowing the module layout, and
-    it is one line, and that line is the difference between exiting with what the
-    run decided and exiting with zero regardless.
-    """
-
     def test_it_exits_with_what_the_run_decided(self) -> None:
         with tempfile.TemporaryDirectory() as empty:
             argv = [sys.argv[0], empty, empty]
@@ -328,14 +321,7 @@ class CommandTest(unittest.TestCase):
 
 
 class SharedDirectoryRuleTest(unittest.TestCase):
-    """The rule every member of this family uses to find a file it does not carry.
-
-    Byte-identical in all of them, so these check the behaviour that identity is
-    supposed to guarantee rather than the text of one copy.
-    """
-
     def test_the_project_above_is_looked_at_before_the_package_itself(self) -> None:
-        """Vendored, the parent owns the library, which is what ALONGSIDE is for."""
         found = fix.directories({})
 
         self.assertLess(found.index(fix.ALONGSIDE), found.index(fix.DEFAULT_DIRECTORY))
