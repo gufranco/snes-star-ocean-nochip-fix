@@ -276,9 +276,9 @@ module of the same name.
 | Thing | Rule |
 |:------|:-----|
 | Language | Python only |
-| Comments | None in source. Docstrings carry the reasoning, and say why rather than what |
+| Comments | None in source, and a docstring counts as one |
 | Test layout | `<module>.test.py` beside the module it covers |
-| Test structure | Arrange, blank line, one act, blank line, assert. No section labels |
+| Test structure | Arrange, act, assert, each opened by its bare marker |
 | Package manager for tooling | pnpm, never npm |
 | Commits | Conventional Commits |
 | Coverage | 100% statements and branches, enforced |
