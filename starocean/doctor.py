@@ -23,6 +23,17 @@ VERSION = _version()
 
 ROOT = Path(__file__).resolve().parent.parent
 
+
+def _reachable(root: Path = ROOT, path: list[str] | None = None) -> bool:
+    where = sys.path if path is None else path
+    if str(root) in where:
+        return False
+    where.insert(0, str(root))
+    return True
+
+
+_reachable()
+
 from starocean import environment  # noqa: E402
 
 MANIFEST = ROOT / "editions.manifest.json"
