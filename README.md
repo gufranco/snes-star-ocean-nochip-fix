@@ -1,194 +1,333 @@
+English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
+
 # Star Ocean, no chip: the header fix
 
-neviksti took the S-DD1 out of Star Ocean. The header never noticed.
+A header correction for neviksti's two 96 Mbit Star Ocean rebuilds, held to four pinned digests of every file from the retail cartridge to the corrected image.
 
 [![CI](https://github.com/gufranco/snes-star-ocean-nochip-fix/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/snes-star-ocean-nochip-fix/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2** editions, **12** bytes changed per image and none elsewhere, **32** pinned digests across the two chains, **0** disagreements, **565** tests, **100%** statement and branch coverage, no dependencies
+**2** editions, **12** bytes changed per image and none elsewhere, **32** pinned digests across the two chains, **0** disagreements, **575** tests, **100%** statement and branch coverage, no dependencies
 
-```bash
-python3 starocean/verify.py   # reads only: says what is here and whether it is right
-python3 starocean/fix.py      # confirms, corrects, confirms again, writes
+```python
+import tempfile
+from pathlib import Path
 
-#   japanese: -> dist/star-ocean-jp-nochip.sfc (4656c58a…)
+from starocean import EDITIONS, look, report, verdict
 
-#   english:  -> dist/star-ocean-en-nochip.sfc (3f0af092…)
+with tempfile.TemporaryDirectory() as where:
+    (Path(where) / "Star Ocean (Japan).sfc").write_bytes(b"a different file")
+    found = look(where, EDITIONS, where)
 
-#   2 of 2 corrected
+for line in report(found)[:4]:
+    print(line)
+print(verdict(found))
 ```
 
+```
+  japanese: source altered, Star Ocean (Japan).sfc (found 455314660dc0a594)
+  japanese: patch absent, 96Mbit_SO_JPN.xdelta
+  japanese: reads absent, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc
+  japanese: writes absent, star-ocean-jp-nochip.sfc
+wrong
+```
+
+The example puts a file under the name of the Japanese retail cartridge with the wrong content, and asks what is there. `look` finds the file, digests it, and reports it as `altered` with the first 16 hex digits of the sha256 it found. The other three links of the Japanese chain are not there and read as `absent`. One altered link makes the verdict `wrong`. Nothing was written.
 
 ## Install
+
+| Requirement | Version |
+|:--|:--|
+| Python | 3.12 or newer |
+| git | Any, to fetch the submodule |
 
 ```bash
 git clone --recurse-submodules https://github.com/gufranco/snes-star-ocean-nochip-fix.git
 cd snes-star-ocean-nochip-fix
+python3 starocean/doctor.py
 ```
 
-Python 3.12 or newer. Nothing else at runtime.
+The header reader is a submodule, `snes-rom-image-python`, and the memory map it uses is a submodule nested inside it, `snes-mapper-python`. A source archive from the download-zip link carries neither, so that checkout cannot correct anything. In a checkout made without `--recurse-submodules`, run `git submodule update --init --recursive`.
 
-> [!IMPORTANT]
-> The download-zip link on the repository page produces a checkout that cannot
-> run. A source archive cannot carry a submodule, and the header reader is one,
-> with the memory map nested a level below it. Clone with
-> `--recurse-submodules`, or run `git submodule update --init --recursive` in a
-> checkout that already exists.
-
-This package is not installable from an index and carries no `[project]` block,
-because it consumes another member as a submodule rather than as a version range.
-
-### Run it
-
-You supply the files. Put whatever you have in [`roms/`](roms/) under the
-filenames in [`roms/README.md`](roms/README.md), then ask what is there:
-
-```bash
-python3 starocean/verify.py roms dist
-```
+The doctor reports the machine, the submodule, the manifest and every link of both chains it finds under [`roms/`](roms/) and `dist/`, and ends with one line. Paste its whole output into any bug report. It exits 0 when every check passes and 1 when one does not.
 
 ```
-  japanese: source matches, Star Ocean (Japan).sfc
-  japanese: patch absent, 96Mbit_SO_JPN.xdelta
-  ...
+  14 checks, nothing to report
 ```
 
-That reads and writes nothing. When the image the correction consumes is present:
+The commands run as files from the checkout. This repository ships no packaging block, because it takes `snes-rom-image` as a submodule rather than as a version range, and a wheel built from here would fail on its first import.
 
-```bash
-python3 starocean/fix.py roms dist
-```
-
-Both are run as files rather than as installed commands. This repository ships
-no packaging block, because it consumes `snes-rom-image` as a submodule rather
-than as a version range: a wheel built from here would install cleanly and then
-raise on its first import, since the submodule is not in it and cannot be.
-
-Point `STAR_OCEAN_ROM_DIR` at a library somewhere else to read from there
-instead. A named directory wins even when it turns out to be empty, because
-quietly falling back from a path somebody typed turns a typo into a run that
-reports nothing needed doing.
+Releases follow [Semantic Versioning](https://semver.org/) and are cut from the commit history by semantic-release. Every release is tagged and listed on the [releases page](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases).
 
 ## The interface
 
+### Commands
+
+You supply the files. Put them in [`roms/`](roms/) under the names [`roms/README.md`](roms/README.md) lists, then:
+
+```bash
+python3 starocean/verify.py roms dist
+python3 starocean/fix.py roms dist
+```
+
+| Command | Arguments | Does | Exit codes |
+|:--|:--|:--|:--|
+| `python3 starocean/verify.py` | `[source] [destination]`, default `roms` and `dist` | Looks for all four links of both chains, reports each, and writes nothing | 0 every file found matches, 1 a file found does not, 2 nothing from either chain is there |
+| `python3 starocean/fix.py` | `[source] [destination]`, default the source directory below and `dist` | Confirms each rebuild, corrects it, confirms the result, and writes it | 0 at least one image written and none refused, 1 an image was refused, 2 neither rebuild is there |
+| `python3 starocean/doctor.py` | none | Reports what is on this machine | 0 every check passes, 1 one does not |
+
+When `fix.py` gets no source argument, it reads from the directory `STAR_OCEAN_ROM_DIR` names. A named directory is used even when it is empty, with no fallback, so a mistyped path finds no image rather than an image somewhere else. Without the variable it takes the first directory that exists out of `roms` beside this checkout and [`roms/`](roms/) inside it. `verify.py` takes its directory only as an argument.
+
+```python
+from starocean import fix, verify
+
+print(fix.main(["nowhere", "nowhere"]))
+print(verify.main(["nowhere", "nowhere"]))
+```
+
+```
+  japanese: not here, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc is not in nowhere. A copy you already own goes there, or wherever the source directory points
+  english: not here, Star Ocean (J) T+Eng, SDD1 Patched v1 DeJap, SDD1 v1 Neviksti.sfc is not in nowhere. A copy you already own goes there, or wherever the source directory points
+  neither image was found in nowhere, so nothing was written
+2
+  japanese: source absent, Star Ocean (Japan).sfc
+  japanese: patch absent, 96Mbit_SO_JPN.xdelta
+  japanese: reads absent, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc
+  japanese: writes absent, star-ocean-jp-nochip.sfc
+  english: source absent, Star Ocean (J) T+Eng v1.0 DeJap.sfc
+  english: patch absent, 96Mbit_SO_ENG.xdelta
+  english: reads absent, Star Ocean (J) T+Eng, SDD1 Patched v1 DeJap, SDD1 v1 Neviksti.sfc
+  english: writes absent, star-ocean-en-nochip.sfc
+  nothing from the chain was found under nowhere
+2
+```
+
+`main(argv)` is what each command runs, and it returns the exit code. With both rebuilds present, `fix.py` prints each edition, the path it wrote and the sha256 of what it wrote, then `2 of 2 corrected`.
+
+### Reading and correcting
+
 | Call | Does | Returns |
 |:--|:--|:--|
-| `look(where, editions, into)` | Reads every link of every chain and says what is there | `Finding` objects |
-| `report(findings)` | Those findings as lines a person reads | strings |
-| `verdict(findings)` | One word for the whole run | `sound`, `wrong` or `nothing` |
-| `apply(image, edition)` | Corrects a supplied image and hands back the bytes | `bytes` |
-| `confirm(data, expected)` | Whether a file is the one the manifest names | `bool` |
-| `digests_of(data)` | All four digests of a buffer | a mapping |
-| `named(name)` / `matching(digests)` | An edition, by name or by what a file turned out to be | an `Edition` |
-| `run(where, into)` | The one that writes | an exit code |
+| `look(source=None, catalogue=None, destination=None)` | Looks for every link of every chain: `source`, `patch` and `reads` under `source`, `writes` under `destination`. Subdirectories are walked. Defaults are `roms`, `EDITIONS` and `dist` | A list of `Finding` |
+| `report(findings)` | One line per finding, with the first 16 hex digits of the sha256 found for an `altered` or `corrupt` file | A list of strings |
+| `verdict(findings)` | `WRONG` when any finding is `altered` or `corrupt`, else `SOUND` when any `matches`, else `NOTHING` | A string |
+| `confirm(image, edition)` | Checks the length, then the sha256, then the other three digests against `edition.before` | The `edition` |
+| `correct(image)` | Declares no coprocessor and the size the image has, in every header mirror, and recomputes the checksum. Checks nothing | The corrected bytes |
+| `apply(image, edition)` | `confirm`, `correct`, then the four digests of the result against `edition.after` | The corrected bytes |
+| `run(edition, source, destination)` | Reads `edition.reads` from `source`, applies it, and writes `edition.writes` under `destination`, making the directory | The path written |
+| `digests_of(data)` | crc32, md5, sha1 and sha256, as lowercase hex | A dict |
+| `directories(environment=None)` | The places `fix.py` looks: each entry of `STAR_OCEAN_ROM_DIR` split on the path separator, then `roms` beside the checkout, then `roms` inside it | A tuple of paths |
+| `source_directory(environment=None, places=None)` | `STAR_OCEAN_ROM_DIR` as given when it is set, else the first of `places` that is a directory, else `roms` inside the checkout | A path |
 
-`look` reads, `apply` corrects and hands back the bytes, and neither writes
-anything.
+`look`, `report`, `verdict`, `confirm`, `correct`, `apply` and `digests_of` write nothing. `run` is the only call that writes.
 
-```python
-import tempfile
-
-from starocean import EDITIONS, look, report, verdict
-
-with tempfile.TemporaryDirectory() as nothing:
-    found = look(nothing, EDITIONS, nothing)
-
-    for line in report(found):
-        print(line.split(",")[0].strip())
-    print(verdict(found))
-```
-
-```
-japanese: source absent
-japanese: patch absent
-japanese: reads absent
-japanese: writes absent
-english: source absent
-english: patch absent
-english: reads absent
-english: writes absent
-nothing
-```
-
-Pointed at a directory with nothing in it, every link of both chains reports
-absent and the verdict is `nothing` rather than `wrong`. Those are different
-answers on purpose: a run that found nothing to check is not a run that found
-something broken.
-
-The two editions, and what each chain starts from and ends at:
+| `Finding` attribute | Meaning |
+|:--|:--|
+| `edition` | The `Edition` the link belongs to |
+| `step` | The `Step` it is |
+| `path` | Where it was looked for or found |
+| `state` | `ABSENT`, `MATCHES`, `ALTERED` when the sha256 differs, or `CORRUPT` when the sha256 matches and another digest does not |
+| `found` | The four digests of the file, or `None` when it is absent |
 
 ```python
-from starocean import EDITIONS, EXPECTED_BYTES, named
+import os
+from pathlib import Path
+
+from starocean import directories, fix, source_directory
+
+print(source_directory({"STAR_OCEAN_ROM_DIR": "/srv/roms"}))
+print(source_directory({}, places=[Path("/nowhere")]) == fix.DEFAULT_SOURCE)
+named = {"STAR_OCEAN_ROM_DIR": os.pathsep.join(["/a", "/b"])}
+print([str(where) for where in directories(named)][:2])
+print(directories({})[-1] == fix.DEFAULT_SOURCE)
+```
+
+```
+/srv/roms
+True
+['/a', '/b']
+True
+```
+
+### Editions and their chains
+
+| Name | Content |
+|:--|:--|
+| `EDITIONS` | The two `Edition` records, `japanese` then `english`, loaded from [`editions.manifest.json`](editions.manifest.json) |
+| `named(name, among=None)` | The edition with that name. Raises `UnknownEdition` for any other |
+| `matching(digest, among=None)` | The edition whose input has that sha256, or `None` |
+| `load(path=None)`, `load_patch(path=None)` | The editions, or the `Patch`, read from a manifest, by default the one in this checkout |
+| `PATCH` | The `Patch` record: `name`, `version`, `author`, `where`, `note`, `archive` |
+| `EXPECTED_BYTES` | `0xC00000`, 12,582,912 bytes, the length of every input and output |
+
+| `Edition` attribute | Meaning |
+|:--|:--|
+| `name`, `summary` | The edition's name and one sentence about it |
+| `reads`, `writes` | The file name the correction reads and the one it writes |
+| `size` | The length both of those must have |
+| `before`, `after` | The four digests of the input and of the output |
+| `source`, `patch` | The manifest entries for the retail cartridge and for neviksti's patch |
+| `chain()` | Four `Step` records, in order: `source`, `patch`, `reads`, `writes` |
+
+A `Step` carries `what`, `name`, `held` and `produced`, which is true only for `writes`. `step.bytes` is its pinned length and `step.digest(which=None)` returns one pinned digest, the sha256 by default.
+
+```python
+from starocean import EDITIONS, EXPECTED_BYTES, PATCH, named
 
 for edition in EDITIONS:
-    print(edition.name, edition.reads, "->", edition.writes)
+    print(edition.name, edition.size == EXPECTED_BYTES, edition.writes)
+    for step in edition.chain():
+        print(" ", step.what, step.bytes, step.digest()[:16], step.produced)
 
-print(named("english").size == EXPECTED_BYTES)
+print(PATCH)
+print(named("english").summary)
 ```
 
 ```
-japanese Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc -> star-ocean-jp-nochip.sfc
-english Star Ocean (J) T+Eng, SDD1 Patched v1 DeJap, SDD1 v1 Neviksti.sfc -> star-ocean-en-nochip.sfc
-True
+japanese True star-ocean-jp-nochip.sfc
+  source 6291456 efae37be832d0ea1 False
+  patch 3227030 8c3869301f396f44 False
+  reads 12582912 e5ba9bef71c8ea31 False
+  writes 12582912 4656c58a296b8901 True
+english True star-ocean-en-nochip.sfc
+  source 6291456 504050fcbcf1b676 False
+  patch 2869793 83b209ef73241fa3 False
+  reads 12582912 1bcb3b8b58f19a91 False
+  writes 12582912 3f0af092ae356444 True
+<Patch Star Ocean no S-DD1/96Mbit hack 1.0, by neviksti>
+The same patch on the DeJap English translation. The two are not interchangeable.
 ```
 
-Every file is confirmed against all four digests, not just the deciding one:
+### Digests
+
+| Name | Content |
+|:--|:--|
+| `DIGESTS` | `('crc32', 'md5', 'sha1', 'sha256')`, every digest a file is checked against |
+| `DECIDES` | `'sha256'`, the one that identifies a file. The other three are cross-checks |
+| `DIGEST_WIDTHS` | The hex length of each: 8, 32, 40 and 64 |
 
 ```python
-from starocean import DECIDES, DIGESTS, digests_of
+from starocean import DECIDES, DIGEST_WIDTHS, DIGESTS, digests_of, matching, named
 
 found = digests_of(b"not a cartridge")
+print(DIGESTS, DECIDES)
+print({name: len(found[name]) == DIGEST_WIDTHS[name] for name in DIGESTS})
+print(found["crc32"])
 
-print(DIGESTS)
-print(DECIDES)
-print(sorted(found) == sorted(DIGESTS))
+japanese = named("japanese")
+print(matching(japanese.before[DECIDES]))
+print(matching(found[DECIDES]))
 ```
 
 ```
-('crc32', 'md5', 'sha1', 'sha256')
-sha256
-True
+('crc32', 'md5', 'sha1', 'sha256') sha256
+{'crc32': True, 'md5': True, 'sha1': True, 'sha256': True}
+11c17190
+<Edition japanese, 12582912 bytes>
+None
 ```
 
-Publishing a crc32 beside a sha256 and never looking at the crc32 is publishing
-decoration.
+### Errors
 
-Everything the package raises lives in
-[`starocean/errors.py`](starocean/errors.py) and nowhere else. There are six,
-and they are separate classes because their fixes are separate: a file that is
-not a file, one that matches nothing, one that matches a known bad dump, one that
-is a cartridge but the wrong one, one that is absent, and a name no edition goes
-by.
+All six live in [`starocean/errors.py`](starocean/errors.py), and each is published at the package root.
+
+| Error | Raised by | When |
+|:--|:--|:--|
+| `Unrecognised` | `confirm`, `apply` | The file has the wrong length, or the right length and a different sha256 |
+| `Corrupt` | `confirm`, `apply` | The sha256 matches and another of the four digests does not, so the manifest contradicts itself |
+| `NotACartridge` | `correct`, `apply` | No cartridge header is found in the bytes |
+| `Unexpected` | `apply` | The input was the one named and the corrected result has a sha256 other than the one pinned |
+| `Missing` | `run` | The file the edition reads is not in the source directory |
+| `UnknownEdition` | `named` | No edition has that name |
+
+`fix.py` reports `Missing` as `not here` and goes on to the next edition. It reports the other four as `refused`, writes nothing for that edition, and exits 1.
+
+```python
+from starocean import (
+    Corrupt,
+    Edition,
+    Missing,
+    NotACartridge,
+    UnknownEdition,
+    Unrecognised,
+    apply,
+    confirm,
+    correct,
+    digests_of,
+    named,
+    run,
+)
+
+japanese = named("japanese")
+data = b"not a cartridge"
+held = digests_of(data)
+pinned = Edition(
+    name="sample",
+    summary="",
+    reads="in.sfc",
+    writes="out.sfc",
+    size=len(data),
+    before=dict(held, md5="0" * 32),
+    after=held,
+    source={"name": "a"},
+    patch={"name": "b"},
+)
+
+attempts = (
+    lambda: confirm(data, japanese),
+    lambda: correct(data),
+    lambda: apply(data, pinned),
+    lambda: named("french"),
+    lambda: run(japanese, "nowhere", "nowhere"),
+)
+for attempt in attempts:
+    try:
+        attempt()
+    except (Unrecognised, NotACartridge, Corrupt, UnknownEdition, Missing) as error:
+        print(type(error).__name__ + ":", str(error).split(". ")[0])
+```
+
+```
+Unrecognised: japanese is 12582912 bytes and this is 15
+NotACartridge: nothing in these 15 bytes reads as a cartridge header, so there is no header to correct
+Corrupt: sample matches on sha256 but not on md5: the manifest says 00000000000000000000000000000000 and the file gives 13c705c309736ec991ef4bc3abb3745d
+UnknownEdition: french is not an edition this corrects; there are japanese, english
+Missing: Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc is not in nowhere
+```
+
+### Version and states
+
+| Name | Content |
+|:--|:--|
+| `VERSION`, `__version__` | The release this checkout is, written by the release job |
+| `ABSENT`, `MATCHES`, `ALTERED`, `CORRUPT` | The four states of a `Finding` |
+| `NOTHING`, `SOUND`, `WRONG` | The three answers of `verdict` |
 
 ## Credit where it belongs
 
-The hard part was done by other people, years ago, and none of it is repeated here.
-
 | Who | What |
-|:----|:-----|
-| **neviksti** | Reverse-engineered the S-DD1 and wrote the [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/): decompresses the graphics ahead of time and rebuilds the cartridge at 96 Mbit, so the chip is not needed at all. Two patches, one for the Japanese original and one for the translated build. |
-| **DeJap Translations** | The English translation the second patch is built on. |
+|:--|:--|
+| **neviksti** | Reverse-engineered the S-DD1 and wrote the [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/), which decompresses the graphics ahead of time and rebuilds the cartridge at 96 Mbit, so the chip is not needed. Two patches, one for the Japanese original and one for the translated build |
+| **DeJap Translations** | The English translation the second patch is built on |
 
-This repository changes twelve bytes of a header. That is the entire contribution, and the ratio is worth being clear about.
-
-neviksti's stated purpose is worth repeating because it is exactly why the header matters: the hack is **for real hardware**. Backup units like the Game Doctor SF7, flash carts and custom carts have no S-DD1, so an unmodified Star Ocean will not run on them. A header still advertising a chip that is not fitted is a loose end on work aimed squarely at hardware that reads headers.
+neviksti's stated purpose is real hardware: backup units such as the Game Doctor SF7, flash carts and custom boards have no S-DD1, so an unmodified Star Ocean does not run on them. Those are also the machines that read the header.
 
 ## What is wrong
 
-Star Ocean shipped on an S-DD1 board. The chip decompressed graphics on the way to the console, which is how a 1996 cartridge fit a game that size. After the patch the data is already decompressed and the chip has nothing left to do.
-
-Both rebuilds still say, in their header, that an S-DD1 is fitted.
+Star Ocean shipped on an S-DD1 board, and the chip decompressed graphics on the way to the console. After neviksti's patch the data is already decompressed. Both rebuilds still declare an S-DD1 in their header.
 
 | Field | Says | Should say |
-|:------|:-----|:-----------|
+|:--|:--|:--|
 | Chipset | `0x45`, S-DD1 with save memory | `0x00`, no coprocessor |
-| Declared size | `0x0D`, eight megabytes | `0x0E`, the first power of two that holds twelve |
-| Checksum | Covers the old fields | Covers the new ones |
+| Declared size | `0x0D`, 8 megabytes | `0x0E`, 16 megabytes, the first power of two that holds 12 |
+| Checksum and complement | Cover the old fields | Cover the new ones |
 
-The size was wrong before anyone touched the file. The field holds a power of two and there is no power of two at twelve, so the rebuild inherited a declaration that never matched it.
+The size field holds a power of two, and 12 megabytes is not one, so the rebuilds inherited a declaration that never matched their length.
 
 ## The solution
 
-Nothing here reimplements any of it. [`snes-mapper`](https://github.com/gufranco/snes-mapper-python) decides where the header sits, [`snes-rom-image`](https://github.com/gufranco/snes-rom-image-python) rewrites every mirror and recomputes the checksum, and this repository is the part that makes a small unattended change safe: it checks at both ends.
+[`snes-mapper`](https://github.com/gufranco/snes-mapper-python) decides where the header sits. [`snes-rom-image`](https://github.com/gufranco/snes-rom-image-python) rewrites every mirror and recomputes the checksum. This repository checks the image against the manifest before the rewrite and checks the result after it.
 
 ```mermaid
 graph LR
@@ -200,24 +339,20 @@ graph LR
     E -- yes --> F[written]
 ```
 
-The order is the whole design. An image is confirmed before anything touches it, so a file that is not the one named never reaches the rewrite. The result is confirmed before it is written, so a rewrite that produced something unforeseen ends as a refusal rather than as a file on disk that looks finished.
+A file other than the one named is refused before the rewrite touches it. A rewrite that produces anything other than the pinned result is refused before it reaches the disk.
 
 ## The two editions
 
-The two patches are not interchangeable, which is why these are two editions rather than one with a flag.
-
 | Edition | Starts from | Patch | Writes |
-|:--------|:------------|:------|:-------|
+|:--|:--|:--|:--|
 | `japanese` | `Star Ocean (Japan).sfc` | `96Mbit_SO_JPN.xdelta` | `star-ocean-jp-nochip.sfc` |
-| `english` | the same cartridge with DeJap's translation applied | `96Mbit_SO_ENG.xdelta` | `star-ocean-en-nochip.sfc` |
+| `english` | `Star Ocean (J) T+Eng v1.0 DeJap.sfc`, the same cartridge with DeJap's translation applied | `96Mbit_SO_ENG.xdelta` | `star-ocean-en-nochip.sfc` |
 
-For the English chain the order matters and is neviksti's, not mine: apply DeJap's translation patch first and the 96 Mbit patch second. The other way round does not work.
+The two patches are not interchangeable. For the English chain, apply DeJap's translation first and the 96 Mbit patch second, as neviksti specifies.
 
 ## The whole chain is pinned, not just the ends
 
-Pinning only the image the correction consumes tells you what to end up with and nothing about how. If you have the wrong file, the only thing it can say is "this is not the one named", when the useful answer is usually that the wrong patch was applied two steps earlier.
-
-So every file between a cartridge you own and the image this writes carries four digests:
+Every file between a cartridge you own and the image this writes carries its length and four digests: the retail image, the patch, the rebuild, and the corrected image. `verify.py` reports each link as `absent`, `matches`, `altered` or `corrupt`, so a wrong rebuild is traced to the link that went wrong, such as the wrong patch applied two steps earlier.
 
 ```mermaid
 graph LR
@@ -225,35 +360,30 @@ graph LR
     B -->|this repository| C[corrected image]
 ```
 
-`verify.py` looks for all four links, reports each as absent, matching, altered or corrupt, and writes nothing. A report naming which link is wrong points at the step to redo.
-
-Every filename and every digest lives in [`editions.manifest.json`](editions.manifest.json) and is printed in [`roms/README.md`](roms/README.md). The table is data rather than code: filenames and digests are the two things most likely to need a correction of their own, and a table nobody has to read Python to check is easier to correct.
+Every file name and digest is in [`editions.manifest.json`](editions.manifest.json) and is listed in [`roms/README.md`](roms/README.md). The patch archive is pinned there too, with its length and four digests.
 
 ## Why both ends are pinned
 
-A correction whose output is not written down is a script, and a script that rewrites a header is indistinguishable from one that corrupts it. Both produce a file of exactly the right length.
+A rewritten header and a corrupted one are both files of exactly the right length. Four digests of the input and four of the output catch three cases:
 
-So the manifest pins four digests of what goes in and four of what comes out. That buys three things:
-
-- **A wrong input is caught before the rewrite.** A different revision of the patch produces a file of the right length and different content, and it would otherwise be corrected into something nobody has ever tested.
-- **A changed correction is caught after it.** If the input was the one named and the output is not the one promised, something about the correction itself moved, and the run says so instead of writing.
-- **A manifest that contradicts itself is caught either way.** All four digests are confirmed, not just the deciding one. Publishing a crc32 beside a sha256 and never looking at the crc32 is publishing decoration.
+- **A wrong input, before the rewrite.** A different revision of the patch produces a file of the right length with different content.
+- **A changed correction, after it.** The input matched and the output does not, so the correction itself moved, and the run raises `Unexpected` instead of writing.
+- **A manifest that contradicts itself, either way.** All four digests are compared, and a crc32, md5 or sha1 that disagrees with a matching sha256 raises `Corrupt`.
 
 ## What actually changes
 
-Twelve bytes. Six per header mirror, and there are two mirrors, at `0x7FC0` and `0xA07FC0`.
+Six bytes in each of the two header mirrors, at `0x7FC0` and `0xA07FC0`:
 
-```text
-0x7FC0 + 0x16   chipset          0x45 -> 0x00
-0x7FC0 + 0x17   declared size    0x0D -> 0x0E
-0x7FC0 + 0x1C   complement       recomputed
-0x7FC0 + 0x1E   checksum         recomputed
-```
+| Offset in the mirror | Field | Before | After |
+|:--|:--|:--|:--|
+| `0x16` | Chipset | `0x45` | `0x00` |
+| `0x17` | Declared size | `0x0D` | `0x0E` |
+| `0x1C`, `0x1D` | Checksum complement | Old | Recomputed |
+| `0x1E`, `0x1F` | Checksum | Old | Recomputed |
 
-A test asserts that nothing outside a header mirror moves, so the claim is checked rather than stated. The game data the patch produced is not touched.
+A test asserts that every byte that moves lies inside a header mirror, and a second correction of a corrected image changes nothing.
 
-The manifest carries the digests of what goes in and what comes out, and beside
-them the digests a superseded correction produced, with the reason it changed:
+The manifest also records, under `supersedes`, the digests this tool wrote before 2026-08-25. Those images carry a checksum computed by a rule that was wrong for a length that is not a power of two. An image matching them is one revision old: run the correction again on the rebuild.
 
 ```python
 from starocean import named
@@ -269,99 +399,60 @@ e5ba9bef71c8ea31
 4656c58a296b8901
 ```
 
-An image matching the entry recorded under `supersedes` carries a checksum no
-cartridge would. It was produced by this tool while the header reader below it
-followed a rule that was wrong for an image whose length is not a power of two,
-and both of these are twelve megabytes. Recording those digests beside the reason
-is what turns "your file does not match" into "your file is one revision old".
-
 ## Is it right
 
 ```bash
-python3 -m conformance.against_images
+python3 conformance/against_images.test.py
 ```
 
-The real files, when they are here: every pinned digest, and that only header
-mirrors move. It is skipped rather than passed when neither image is present, so
-a run that proved nothing never reads as a run that proved something. CI attempts
-it on every push and annotates the skip.
+With the rebuilds in [`roms/`](roms/), this checks every pinned digest of the input and of the output, that the result declares no coprocessor and carries a checksum that covers it, that the header still sits at `0x7FC0`, that only header mirrors move, and that correcting twice gives the same bytes. Without them, its 11 tests skip and say why. CI runs both commands on every push, and annotates the run when no image is present.
 
-It runs the correction twice and compares what came out, because a correction
-that is not idempotent is one nobody can safely re-run, and both runs write a
-file of the right length.
-
-[`conformance/hardware.json`](conformance/hardware.json) holds what this
-correction asserts and where each assertion comes from.
-[`conformance/divergences.json`](conformance/divergences.json) holds where a
-source is weaker than it looks, and [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md)
-carries every place fidelity here is a claim rather than a measurement.
+[`conformance/hardware.json`](conformance/hardware.json) holds the two facts this repository pins: the image length and the size byte that follows from it. Everything else about a header is pinned in `snes-rom-image-python`. [`conformance/divergences.json`](conformance/divergences.json) records that the size byte comes from Nintendo's rule rather than a printed row, and [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) lists the 3 things not settled.
 
 ## Working on it
 
+| Need | Where |
+|:--|:--|
+| Every gate and the order to run them | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| The same material for a coding agent | [AGENTS.md](AGENTS.md) |
+| The standard this repository shares with the rest of the family | [FAMILY.md](FAMILY.md) |
+| Bug reports | [GitHub Issues](https://github.com/gufranco/snes-star-ocean-nochip-fix/issues) |
+| Security reports | [SECURITY.md](SECURITY.md) |
+
 ```bash
+uvx ruff@0.16.3 format --check .
+uvx ruff@0.16.3 check .
+uvx --python 3.12 mypy==1.14.1
 python3 -m coverage erase
 for file in $(find starocean conformance -name '*.test.py' | sort); do
   python3 -m coverage run -a "$file"
 done
 python3 -m coverage report
-```
-
-Then the throughput floor, which runs outside the coverage step:
-
-```bash
 python3 -m conformance.speed
 ```
 
-| Suite | File | Covers |
-|:------|:-----|:-------|
-| Editions | [`starocean/editions.test.py`](starocean/editions.test.py) | The manifest, digest widths, lookup by name and by digest |
-| Fix | [`starocean/fix.test.py`](starocean/fix.test.py) | Correcting, confirming at both ends, every refusal, the command line |
-| Verify | [`starocean/verify.test.py`](starocean/verify.test.py) | The four states, the verdict, and that nothing is ever written |
-| Package | [`starocean/package.test.py`](starocean/package.test.py) | The exported surface, and that both commands resolve |
-| Version | [`starocean/version.test.py`](starocean/version.test.py) | One version, in the file the release script writes |
-| Images | [`conformance/against_images.test.py`](conformance/against_images.test.py) | The real files: every pinned digest, and that only header mirrors move |
+Each module has a test file beside it, named after it, and each runs on its own. Coverage is a hard gate at 100% statement and branch. The throughput floor, 50 digest passes over a megabyte per second, runs outside the coverage step.
 
-The last one is skipped rather than passed when neither image is present, so a run that proved nothing never reads as a run that proved something. CI attempts it on every push and annotates the skip, and it runs the correction twice and compares what came out, because a correction that is not idempotent is one nobody can safely re-run and both runs write a file of the right length.
-
-`python3 starocean/doctor.py` says what is actually on this machine: both editions, every link of both chains looked for on disk, and whether the submodule this repository needs is checked out. It is run as a file rather than with `-m` so that it still runs when the package itself will not import, which is the case it exists for. Its report is what an issue asks for, because a report is only as good as what it says about the machine that produced it.
-
-A weekly job checks whether the vendored packages have moved and opens an issue if so. Taking them stays a deliberate act: a header reader that changes what it reads changes what every pinned digest means.
-
-
-[`AGENTS.md`](AGENTS.md) is the document for an agent working here.
-[`FAMILY.md`](FAMILY.md) is the standard this repository shares with the rest of
-the family, kept identical in every member above the marker at the end of its
-shared part.
+A weekly job reports when the pinned submodule falls behind its upstream. Moving the pin is a deliberate change, because a header reader that changes what it writes changes every pinned output digest.
 
 ## References
 
 | Package | Does |
-|:--------|:-----|
+|:--|:--|
 | [`snes-rom-image`](https://github.com/gufranco/snes-rom-image-python) | Finds every header mirror, rewrites the fields, recomputes the checksum |
 | [`snes-mapper`](https://github.com/gufranco/snes-mapper-python) | Decides where a header is, out of the places one can be |
-
-Both are carried as submodules, each at the root of the repository that pulls it in and named after itself, so what this is built on is visible the moment either repository is opened. `snes-mapper-python` arrives nested inside `snes-rom-image-python`, which is why the clone above is recursive.
 
 - [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/), neviksti, on Romhacking.net
 - [S-DD1](https://wiki.superfamicom.org/s-dd1), Super Famicom Development Wiki
 - [SNES: Star Ocean English translation/hack](https://github.com/frederic-mahe/Hardware-Target-Game-Database/issues/622), Hardware Target Game Database
+- *SNES Development Manual, Book I*, Nintendo of America Inc. 21,022,582 bytes, SHA-256 `f1405241000046abba7849376d2ec53cf85f1ad2e9950d69a7c2cf1f3ff6b791`. It is not redistributable and is not in this repository. [`conformance/documents.json`](conformance/documents.json) carries its identity, and `python3 -m conformance.documents` downloads it from https://archive.org/download/SNESDevManual/book1_text.pdf into `docs/`, which git ignores, and refuses any other file. `python3 -m conformance.documents --check` verifies a copy already there.
 
-
-Fetching it is a command rather than an exercise. [`conformance/documents.json`](conformance/documents.json) carries the full digest, the byte count and a fetchable address, and [`conformance/documents.py`](conformance/documents.py) brings it down into `docs/`, which git ignores, and refuses anything whose digest does not match.
-
-```bash
-python3 -m conformance.documents          # fetch and verify the digest
-python3 -m conformance.documents --check  # verify what is already here
-```
 ## Citing this
 
-[CITATION.cff](CITATION.cff) is kept in step with the released version by the
-same script that stamps the package, so the version it names is the version that
-shipped.
+[CITATION.cff](CITATION.cff) is updated with each release by the script that stamps the package version.
 
 ## License
 
-MIT, and it covers the code in this repository and nothing else.
+MIT, covering the code in this repository and nothing else.
 
-Neither image is distributed here and neither is reconstructible from anything in this repository. Star Ocean belongs to its publisher, the S-DD1 removal is neviksti's work, and the English translation is DeJap's. See [`roms/README.md`](roms/README.md).
-
+Neither image is distributed here and neither can be reconstructed from anything in this repository. Star Ocean belongs to its publisher, the S-DD1 removal is neviksti's work, and the English translation is DeJap's. See [`roms/README.md`](roms/README.md).

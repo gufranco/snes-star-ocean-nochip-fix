@@ -78,9 +78,14 @@ class PackagingTest(unittest.TestCase):
         self.assertIn("python3 starocean/fix.py", held)
 
     def test_and_says_why_there_is_nothing_to_install(self) -> None:
+        # Arrange
         held = (ROOT / "README.md").read_text()
 
-        self.assertIn("ships\nno packaging block", held)
+        # Act
+        flowed = " ".join(held.split())
+
+        # Assert
+        self.assertIn("ships no packaging block", flowed)
 
 
 if __name__ == "__main__":

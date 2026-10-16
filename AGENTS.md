@@ -260,7 +260,7 @@ python3 -m conformance.speed
 And, with an image present, the run against the real files:
 
 ```bash
-python3 -m conformance.against_images
+python3 conformance/against_images.test.py
 ```
 
 `conformance/hardware.test.py` is in the coverage loop and needs no image. The
