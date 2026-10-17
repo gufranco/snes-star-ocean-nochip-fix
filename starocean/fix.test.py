@@ -1,21 +1,21 @@
 import hashlib
-import os
 import sys
 import tempfile
 import unittest
-import unittest.mock
 import zlib
 from pathlib import Path
 from typing import Any, override
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from starocean import editions, fix
-from starocean.errors import Corrupt, Missing, NotACartridge, Unexpected, Unrecognised
+import starocean
+from starocean import fix
+
+HEADER = 0x7FC0
 
 
 def an_image(
-    size: int = 0x100000, chipset: int = 0x45, declared: int = 0x0D, at: int = 0x7FC0
+    size: int = 0x100000, chipset: int = 0x45, declared: int = 0x0D, at: int = HEADER
 ) -> bytes:
     rom = bytearray(size)
     rom[at : at + 21] = b"Star Ocean           "
@@ -45,8 +45,8 @@ def a_link(blob: bytes, name: str) -> dict[str, Any]:
 
 def an_edition(
     before: bytes, after: bytes, name: str = "made-up", size: int = 0x100000
-) -> editions.Edition:
-    return editions.Edition(
+) -> starocean.Edition:
+    return starocean.Edition(
         name=name,
         summary="a stand-in",
         reads="in.sfc",
@@ -61,129 +61,228 @@ def an_edition(
 
 class DigestTest(unittest.TestCase):
     def test_all_four_digests_are_computed(self) -> None:
-        found = fix.digests_of(b"anything")
+        # Arrange
+        blob = b"anything"
 
-        self.assertEqual(set(found), set(editions.DIGESTS))
+        # Act
+        found = starocean.digests_of(blob)
 
-    def test_each_is_the_length_that_kind_of_digest_has(self) -> None:
-        found = fix.digests_of(b"anything")
+        # Assert
+        self.assertEqual(found, digests_of(blob))
 
-        for name, width in editions.DIGEST_WIDTHS.items():
-            self.assertEqual(len(found[name]), width)
+    def test_each_matches_a_worked_example(self) -> None:
+        # Arrange
+        blob = b"abc"
 
-    def test_the_same_bytes_always_give_the_same_digests(self) -> None:
-        self.assertEqual(fix.digests_of(b"abc"), fix.digests_of(b"abc"))
+        # Act
+        found = starocean.digests_of(blob)
+
+        # Assert
+        self.assertEqual(
+            found,
+            {
+                "crc32": "352441c2",
+                "md5": "900150983cd24fb0d6963f7d28e17f72",
+                "sha1": "a9993e364706816aba3e25717850c26c9cd0d89d",
+                "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            },
+        )
 
 
 class CorrectTest(unittest.TestCase):
     def test_the_coprocessor_claim_is_cleared(self) -> None:
-        corrected = fix.correct(an_image())
+        # Arrange
+        image = an_image()
 
-        self.assertEqual(corrected[0x7FC0 + 22], 0x00)
+        # Act
+        corrected = starocean.correct(image)
+
+        # Assert
+        self.assertEqual(corrected[HEADER + 22], 0x00)
 
     def test_the_declared_size_is_made_to_match_the_file(self) -> None:
-        corrected = fix.correct(an_image(size=0x100000, declared=0x0D))
+        # Arrange
+        image = an_image(size=0x100000, declared=0x0D)
 
-        self.assertEqual(corrected[0x7FC0 + 23], 0x0A)
+        # Act
+        corrected = starocean.correct(image)
+
+        # Assert
+        self.assertEqual(corrected[HEADER + 23], 0x0A)
 
     def test_the_checksum_is_recomputed_over_the_result(self) -> None:
-        corrected = fix.correct(an_image())
+        # Arrange
+        image = an_image()
 
-        low = corrected[0x7FC0 + 30] | (corrected[0x7FC0 + 31] << 8)
-        complement = corrected[0x7FC0 + 28] | (corrected[0x7FC0 + 29] << 8)
+        # Act
+        corrected = starocean.correct(image)
+
+        # Assert
+        low = corrected[HEADER + 30] | (corrected[HEADER + 31] << 8)
+        complement = corrected[HEADER + 28] | (corrected[HEADER + 29] << 8)
         self.assertEqual(low ^ complement, 0xFFFF)
 
     def test_an_image_needing_nothing_comes_back_unchanged(self) -> None:
-        already = fix.correct(an_image(chipset=0x00, declared=0x0A))
+        # Arrange
+        already = starocean.correct(an_image(chipset=0x00, declared=0x0A))
 
-        self.assertEqual(fix.correct(already), already)
+        # Act
+        again = starocean.correct(already)
+
+        # Assert
+        self.assertEqual(again, already)
 
     def test_correcting_twice_changes_nothing_the_second_time(self) -> None:
-        once = fix.correct(an_image())
+        # Arrange
+        once = starocean.correct(an_image())
 
-        self.assertEqual(fix.correct(once), once)
+        # Act
+        twice = starocean.correct(once)
+
+        # Assert
+        self.assertEqual(twice, once)
 
     def test_an_image_with_no_header_is_refused(self) -> None:
-        with self.assertRaises(NotACartridge):
-            fix.correct(bytes(0x100000))
+        # Arrange
+        blank = bytes(0x100000)
+
+        # Act
+        attempt = lambda: starocean.correct(blank)  # noqa: E731
+
+        # Assert
+        self.assertRaises(starocean.NotACartridge, attempt)
 
 
 class ConfirmTest(unittest.TestCase):
     def test_an_image_the_manifest_knows_is_accepted(self) -> None:
+        # Arrange
         before = an_image()
-        edition = an_edition(before, fix.correct(before))
+        edition = an_edition(before, starocean.correct(before))
 
-        self.assertIs(fix.confirm(before, edition), edition)
+        # Act
+        confirmed = starocean.confirm(before, edition)
+
+        # Assert
+        self.assertIs(confirmed, edition)
 
     def test_an_image_of_the_wrong_length_is_refused_before_it_is_hashed(self) -> None:
+        # Arrange
         before = an_image()
-        edition = an_edition(before, fix.correct(before), size=0x200000)
+        edition = an_edition(before, starocean.correct(before), size=0x200000)
 
-        with self.assertRaises(Unrecognised) as raised:
-            fix.confirm(before, edition)
+        # Act
+        with self.assertRaises(starocean.Unrecognised) as raised:
+            starocean.confirm(before, edition)
 
+        # Assert
         self.assertIn("bytes", str(raised.exception))
 
     def test_an_image_of_the_right_length_and_wrong_content_is_refused(self) -> None:
+        # Arrange
         before = an_image()
-        edition = an_edition(an_image(declared=0x0B), fix.correct(before))
+        edition = an_edition(an_image(declared=0x0B), starocean.correct(before))
 
-        with self.assertRaises(Unrecognised) as raised:
-            fix.confirm(before, edition)
+        # Act
+        with self.assertRaises(starocean.Unrecognised) as raised:
+            starocean.confirm(before, edition)
 
+        # Assert
         self.assertIn("sha256", str(raised.exception))
 
     def test_a_manifest_that_disagrees_with_itself_is_reported_as_that(self) -> None:
+        # Arrange
         before = an_image()
-        edition = an_edition(before, fix.correct(before))
+        edition = an_edition(before, starocean.correct(before))
         edition.before = dict(edition.before, crc32="00000000")
 
-        with self.assertRaises(Corrupt) as raised:
-            fix.confirm(before, edition)
+        # Act
+        with self.assertRaises(starocean.Corrupt) as raised:
+            starocean.confirm(before, edition)
 
+        # Assert
         self.assertIn("crc32", str(raised.exception))
 
     def test_every_kind_of_disagreement_is_caught(self) -> None:
+        # Arrange
         before = an_image()
-        for name, wrong in (("md5", "0" * 32), ("sha1", "0" * 40), ("crc32", "0" * 8)):
-            edition = an_edition(before, fix.correct(before))
-            edition.before = dict(edition.before, **{name: wrong})
+        wrong = (("md5", "0" * 32), ("sha1", "0" * 40), ("crc32", "0" * 8))
+        disagreeing = []
+        for name, value in wrong:
+            edition = an_edition(before, starocean.correct(before))
+            edition.before = dict(edition.before, **{name: value})
+            disagreeing.append((name, edition))
 
-            with self.assertRaises(Corrupt):
-                fix.confirm(before, edition)
+        # Act
+        caught = []
+        for name, edition in disagreeing:
+            with self.assertRaises(starocean.Corrupt) as raised:
+                starocean.confirm(before, edition)
+            caught.append(name in str(raised.exception))
+
+        # Assert
+        self.assertEqual(caught, [True, True, True])
 
 
 class ApplyTest(unittest.TestCase):
     @override
     def setUp(self) -> None:
         self.before = an_image()
-        self.after = fix.correct(self.before)
+        self.after = starocean.correct(self.before)
         self.edition = an_edition(self.before, self.after)
 
     def test_the_corrected_image_comes_back(self) -> None:
-        self.assertEqual(fix.apply(self.before, self.edition), self.after)
+        # Arrange
+        image = self.before
+
+        # Act
+        produced = starocean.apply(image, self.edition)
+
+        # Assert
+        self.assertEqual(produced, self.after)
 
     def test_a_result_the_manifest_did_not_predict_is_refused(self) -> None:
+        # Arrange
         wrong = an_edition(self.before, an_image(declared=0x0C))
 
-        with self.assertRaises(Unexpected) as raised:
-            fix.apply(self.before, wrong)
+        # Act
+        with self.assertRaises(starocean.Unexpected) as raised:
+            starocean.apply(self.before, wrong)
 
+        # Assert
         self.assertIn("sha256", str(raised.exception))
 
     def test_the_refusal_names_what_was_produced_so_it_can_be_looked_up(self) -> None:
+        # Arrange
         wrong = an_edition(self.before, an_image(declared=0x0C))
 
-        with self.assertRaises(Unexpected) as raised:
-            fix.apply(self.before, wrong)
+        # Act
+        with self.assertRaises(starocean.Unexpected) as raised:
+            starocean.apply(self.before, wrong)
 
-        self.assertIn(fix.digests_of(self.after)["sha256"], str(raised.exception))
+        # Assert
+        self.assertIn(digests_of(self.after)["sha256"], str(raised.exception))
+
+    def test_a_result_disagreeing_with_itself_is_reported_as_corrupt(self) -> None:
+        # Arrange
+        edition = an_edition(self.before, self.after)
+        edition.after = dict(edition.after, md5="0" * 32)
+
+        # Act
+        with self.assertRaises(starocean.Corrupt) as raised:
+            starocean.apply(self.before, edition)
+
+        # Assert
+        self.assertIn("after correction", str(raised.exception))
 
     def test_an_image_that_is_not_the_one_named_never_reaches_the_correction(self) -> None:
+        # Arrange
         other = an_edition(an_image(declared=0x0B), self.after)
 
-        with self.assertRaises(Unrecognised):
-            fix.apply(self.before, other)
+        # Act
+        attempt = lambda: starocean.apply(self.before, other)  # noqa: E731
+
+        # Assert
+        self.assertRaises(starocean.Unrecognised, attempt)
 
 
 class OnDiskTest(unittest.TestCase):
@@ -191,69 +290,59 @@ class OnDiskTest(unittest.TestCase):
     def setUp(self) -> None:
         self.where = Path(tempfile.mkdtemp())
         self.before = an_image()
-        self.edition = an_edition(self.before, fix.correct(self.before))
+        self.edition = an_edition(self.before, starocean.correct(self.before))
         (self.where / self.edition.reads).write_bytes(self.before)
 
     def test_a_corrected_file_is_written_beside_the_one_it_came_from(self) -> None:
-        written = fix.run(self.edition, self.where, self.where)
+        # Arrange
+        expected = starocean.correct(self.before)
 
-        self.assertEqual(written.read_bytes(), fix.correct(self.before))
+        # Act
+        written = starocean.run(self.edition, self.where, self.where)
+
+        # Assert
+        self.assertEqual(written.read_bytes(), expected)
 
     def test_the_written_file_carries_the_name_the_manifest_gives_it(self) -> None:
-        written = fix.run(self.edition, self.where, self.where)
+        # Arrange
+        edition = self.edition
 
-        self.assertEqual(written.name, self.edition.writes)
+        # Act
+        written = starocean.run(edition, self.where, self.where)
+
+        # Assert
+        self.assertEqual(written.name, "out.sfc")
 
     def test_a_source_that_is_not_there_is_refused(self) -> None:
-        with self.assertRaises(Missing) as raised:
-            fix.run(self.edition, Path("/nowhere/at/all"), self.where)
+        # Arrange
+        nowhere = Path("/nowhere/at/all")
 
-        self.assertIn(self.edition.reads, str(raised.exception))
+        # Act
+        with self.assertRaises(starocean.Missing) as raised:
+            starocean.run(self.edition, nowhere, self.where)
+
+        # Assert
+        self.assertIn("in.sfc", str(raised.exception))
 
     def test_running_twice_writes_the_same_file(self) -> None:
-        once = fix.run(self.edition, self.where, self.where).read_bytes()
+        # Arrange
+        once = starocean.run(self.edition, self.where, self.where).read_bytes()
 
-        self.assertEqual(fix.run(self.edition, self.where, self.where).read_bytes(), once)
+        # Act
+        twice = starocean.run(self.edition, self.where, self.where)
+
+        # Assert
+        self.assertEqual(twice.read_bytes(), once)
 
     def test_a_destination_that_does_not_exist_yet_is_created(self) -> None:
+        # Arrange
         into = self.where / "made" / "up"
 
-        written = fix.run(self.edition, self.where, into)
+        # Act
+        written = starocean.run(self.edition, self.where, into)
 
+        # Assert
         self.assertTrue(written.is_file())
-
-
-class SourceDirectoryTest(unittest.TestCase):
-    def test_the_directory_comes_from_the_environment_when_one_is_named(self) -> None:
-        self.assertEqual(fix.source_directory({fix.DIRECTORY_VARIABLE: "/x"}), Path("/x"))
-
-    def test_a_named_directory_wins_even_when_it_is_not_there(self) -> None:
-        self.assertEqual(
-            fix.source_directory({fix.DIRECTORY_VARIABLE: "/nowhere"}), Path("/nowhere")
-        )
-
-    def test_and_the_folder_in_this_repository_is_used_when_none_is(self) -> None:
-        self.assertEqual(fix.source_directory({}), fix.DEFAULT_SOURCE)
-
-    def test_the_project_this_sits_inside_is_looked_at_too(self) -> None:
-        self.assertIn(fix.ALONGSIDE, fix.directories({}))
-
-    def test_a_named_directory_comes_before_either_of_them(self) -> None:
-        found = fix.directories({fix.DIRECTORY_VARIABLE: "/x"})
-
-        self.assertEqual(found[0], Path("/x"))
-
-    def test_the_first_place_that_is_actually_there_is_the_one_used(self) -> None:
-        import tempfile
-
-        here = Path(tempfile.mkdtemp())
-
-        self.assertEqual(fix.source_directory({}, places=[Path("/nowhere"), here]), here)
-
-    def test_and_when_no_place_is_there_the_folder_here_is_named(self) -> None:
-        chosen = fix.source_directory({}, places=[Path("/nowhere"), Path("/nor/here")])
-
-        self.assertEqual(chosen, fix.DEFAULT_SOURCE)
 
 
 class MainTest(unittest.TestCase):
@@ -262,89 +351,86 @@ class MainTest(unittest.TestCase):
         self.where = Path(tempfile.mkdtemp())
 
     def test_a_directory_with_neither_image_reports_that_nothing_was_done(self) -> None:
-        self.assertEqual(fix.main([str(self.where), str(self.where)]), 2)
+        # Arrange
+        argv = [str(self.where), str(self.where)]
+
+        # Act
+        code = fix.main(argv)
+
+        # Assert
+        self.assertEqual(code, 2)
 
     def test_a_file_under_the_right_name_but_the_wrong_content_is_refused(self) -> None:
-        edition = editions.EDITIONS[0]
+        # Arrange
+        edition = starocean.named("japanese")
         (self.where / edition.reads).write_bytes(an_image(size=edition.size))
 
-        self.assertEqual(fix.main([str(self.where), str(self.where / "out")]), 1)
+        # Act
+        code = fix.main([str(self.where), str(self.where / "out")])
+
+        # Assert
+        self.assertEqual(code, 1)
 
     def test_a_refusal_writes_nothing(self) -> None:
-        edition = editions.EDITIONS[0]
+        # Arrange
+        edition = starocean.named("japanese")
         (self.where / edition.reads).write_bytes(an_image(size=edition.size))
         into = self.where / "out"
 
+        # Act
         fix.main([str(self.where), str(into)])
 
+        # Assert
         self.assertFalse((into / edition.writes).exists())
 
     def test_a_file_with_no_header_at_all_is_refused_rather_than_crashing(self) -> None:
-        edition = editions.EDITIONS[0]
+        # Arrange
+        edition = starocean.named("japanese")
         (self.where / edition.reads).write_bytes(bytes(edition.size))
 
-        self.assertEqual(fix.main([str(self.where), str(self.where / "out")]), 1)
+        # Act
+        code = fix.main([str(self.where), str(self.where / "out")])
+
+        # Assert
+        self.assertEqual(code, 1)
 
     def test_one_argument_uses_the_destination_in_this_repository(self) -> None:
-        self.assertEqual(fix.main([str(self.where)]), 2)
+        # Arrange
+        argv = [str(self.where)]
+
+        # Act
+        code = fix.main(argv)
+
+        # Assert
+        self.assertEqual(code, 2)
 
     def test_an_image_it_recognises_is_corrected_and_reported(self) -> None:
+        # Arrange
         before = an_image()
-        edition = an_edition(before, fix.correct(before))
+        edition = an_edition(before, starocean.correct(before))
         (self.where / edition.reads).write_bytes(before)
         into = self.where / "out"
 
-        self.assertEqual(fix.main([str(self.where), str(into)], catalogue=(edition,)), 0)
-        self.assertEqual((into / edition.writes).read_bytes(), fix.correct(before))
+        # Act
+        code = fix.main([str(self.where), str(into)], catalogue=(edition,))
+
+        # Assert
+        self.assertEqual(code, 0)
+        self.assertEqual((into / edition.writes).read_bytes(), starocean.correct(before))
 
     def test_one_present_and_one_absent_still_corrects_the_one_that_is_here(self) -> None:
+        # Arrange
         before = an_image()
-        here = an_edition(before, fix.correct(before), name="here")
-        absent = an_edition(before, fix.correct(before), name="absent")
+        here = an_edition(before, starocean.correct(before), name="here")
+        absent = an_edition(before, starocean.correct(before), name="absent")
         absent.reads = "not-here.sfc"
         (self.where / here.reads).write_bytes(before)
 
-        self.assertEqual(fix.main([str(self.where), str(self.where / "out")], (here, absent)), 0)
+        # Act
+        code = fix.main([str(self.where), str(self.where / "out")], (here, absent))
 
-
-class CommandTest(unittest.TestCase):
-    def test_it_exits_with_what_the_run_decided(self) -> None:
-        with tempfile.TemporaryDirectory() as empty:
-            argv = [sys.argv[0], empty, empty]
-            with (
-                unittest.mock.patch.object(sys, "argv", argv),
-                self.assertRaises(SystemExit) as held,
-            ):
-                fix.command()
-
-        self.assertEqual(held.exception.code, 2)
-
-
-class SharedDirectoryRuleTest(unittest.TestCase):
-    def test_the_project_above_is_looked_at_before_the_package_itself(self) -> None:
-        found = fix.directories({})
-
-        self.assertLess(found.index(fix.ALONGSIDE), found.index(fix.DEFAULT_DIRECTORY))
-
-    def test_a_named_directory_is_looked_at_before_either(self) -> None:
-        found = fix.directories({fix.DIRECTORY_VARIABLE: "/x"})
-
-        self.assertEqual(found[0], Path("/x"))
-
-    def test_more_than_one_can_be_named_at_once(self) -> None:
-        found = fix.directories({fix.DIRECTORY_VARIABLE: f"/x{os.pathsep}/y"})
-
-        self.assertEqual(found[:2], (Path("/x"), Path("/y")))
-
-    def test_an_empty_entry_between_two_names_is_passed_over(self) -> None:
-        found = fix.directories({fix.DIRECTORY_VARIABLE: f"/x{os.pathsep}{os.pathsep}/y"})
-
-        self.assertEqual(found[:2], (Path("/x"), Path("/y")))
-
-    def test_no_directory_appears_twice(self) -> None:
-        found = fix.directories({fix.DIRECTORY_VARIABLE: str(fix.DEFAULT_DIRECTORY)})
-
-        self.assertEqual(len(found), len(set(found)))
+        # Assert
+        self.assertEqual(code, 0)
 
 
 if __name__ == "__main__":

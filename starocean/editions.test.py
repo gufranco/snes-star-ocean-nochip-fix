@@ -1,215 +1,451 @@
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 
-from starocean import editions
-from starocean.errors import UnknownEdition
+import starocean
+
+MANIFEST = ROOT / "editions.manifest.json"
+
+WIDTHS = {"crc32": 8, "md5": 32, "sha1": 40, "sha256": 64}
+
+TWELVE_MEGABYTES = 12 * 1024 * 1024
 
 
 class CatalogueTest(unittest.TestCase):
     def test_both_editions_are_listed(self) -> None:
-        self.assertEqual(len(editions.EDITIONS), 2)
+        # Arrange
+        catalogue = starocean.EDITIONS
 
-    def test_each_edition_has_a_name_of_its_own(self) -> None:
-        names = [edition.name for edition in editions.EDITIONS]
+        # Act
+        names = [edition.name for edition in catalogue]
 
-        self.assertEqual(len(names), len(set(names)))
+        # Assert
+        self.assertEqual(names, ["japanese", "english"])
 
     def test_each_edition_names_the_file_it_reads_and_the_file_it_writes(self) -> None:
-        for edition in editions.EDITIONS:
-            self.assertTrue(edition.reads)
-            self.assertTrue(edition.writes)
-            self.assertNotEqual(edition.reads, edition.writes)
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        pairs = [(edition.reads, edition.writes) for edition in catalogue]
+
+        # Assert
+        self.assertEqual([pair for pair in pairs if not all(pair) or pair[0] == pair[1]], [])
 
     def test_both_editions_are_the_same_length(self) -> None:
-        lengths = {edition.size for edition in editions.EDITIONS}
+        # Arrange
+        catalogue = starocean.EDITIONS
 
-        self.assertEqual(lengths, {editions.EXPECTED_BYTES})
+        # Act
+        lengths = {edition.size for edition in catalogue}
+
+        # Assert
+        self.assertEqual(lengths, {TWELVE_MEGABYTES})
 
     def test_that_length_is_the_one_the_whole_bank_map_has(self) -> None:
-        self.assertEqual(editions.EXPECTED_BYTES, 0xC00000)
+        # Arrange
+        expected = 0xC00000
+
+        # Act
+        published = starocean.EXPECTED_BYTES
+
+        # Assert
+        self.assertEqual(published, expected)
 
     def test_an_edition_prints_as_its_name_and_length(self) -> None:
-        printed = repr(editions.EDITIONS[0])
+        # Arrange
+        edition = starocean.named("japanese")
 
-        self.assertIn(editions.EDITIONS[0].name, printed)
-        self.assertIn(str(editions.EDITIONS[0].size), printed)
+        # Act
+        printed = repr(edition)
+
+        # Assert
+        self.assertEqual(printed, "<Edition japanese, 12582912 bytes>")
 
     def test_the_table_is_read_from_the_manifest_rather_than_written_in_code(self) -> None:
-        self.assertTrue(editions.MANIFEST.is_file())
-        self.assertEqual(len(editions.load()), len(editions.EDITIONS))
+        # Arrange
+        held = json.loads(MANIFEST.read_text())
+
+        # Act
+        loaded = starocean.load()
+
+        # Assert
+        self.assertEqual(
+            [edition.name for edition in loaded], [one["name"] for one in held["editions"]]
+        )
 
     def test_a_manifest_somewhere_else_can_be_read_instead(self) -> None:
-        import json
-        import tempfile
-
+        # Arrange
         where = Path(tempfile.mkdtemp()) / "other.json"
         where.write_text(json.dumps({"editions": []}))
 
-        self.assertEqual(editions.load(where), ())
+        # Act
+        loaded = starocean.load(where)
+
+        # Assert
+        self.assertEqual(loaded, ())
 
 
 class DigestTest(unittest.TestCase):
     def test_every_edition_pins_all_four_digests_of_what_it_reads(self) -> None:
-        for edition in editions.EDITIONS:
-            for name, width in editions.DIGEST_WIDTHS.items():
-                self.assertEqual(len(edition.before[name]), width, (edition.name, name))
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        widths = [{name: len(value) for name, value in one.before.items()} for one in catalogue]
+
+        # Assert
+        self.assertEqual(widths, [WIDTHS, WIDTHS])
 
     def test_and_all_four_of_what_it_writes(self) -> None:
-        for edition in editions.EDITIONS:
-            for name, width in editions.DIGEST_WIDTHS.items():
-                self.assertEqual(len(edition.after[name]), width, (edition.name, name))
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        widths = [{name: len(value) for name, value in one.after.items()} for one in catalogue]
+
+        # Assert
+        self.assertEqual(widths, [WIDTHS, WIDTHS])
+
+    def test_the_published_widths_are_those_of_the_four_digests(self) -> None:
+        # Arrange
+        expected = WIDTHS
+
+        # Act
+        published = dict(starocean.DIGEST_WIDTHS)
+
+        # Assert
+        self.assertEqual(published, expected)
 
     def test_no_edition_reads_and_writes_the_same_bytes(self) -> None:
-        for edition in editions.EDITIONS:
-            self.assertNotEqual(edition.before[editions.DECIDES], edition.after[editions.DECIDES])
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        same = [one.name for one in catalogue if one.before["sha256"] == one.after["sha256"]]
+
+        # Assert
+        self.assertEqual(same, [])
 
     def test_no_two_editions_share_a_deciding_digest(self) -> None:
-        seen = [edition.before[editions.DECIDES] for edition in editions.EDITIONS]
-        seen += [edition.after[editions.DECIDES] for edition in editions.EDITIONS]
+        # Arrange
+        catalogue = starocean.EDITIONS
 
+        # Act
+        seen = [one.before["sha256"] for one in catalogue] + [
+            one.after["sha256"] for one in catalogue
+        ]
+
+        # Assert
         self.assertEqual(len(seen), len(set(seen)))
 
     def test_every_digest_is_written_in_lower_case_hexadecimal(self) -> None:
-        for edition in editions.EDITIONS:
-            for held in (edition.before, edition.after):
-                for value in held.values():
-                    self.assertRegex(value, r"^[0-9a-f]+$")
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        values = [
+            value
+            for one in catalogue
+            for held in (one.before, one.after)
+            for value in held.values()
+        ]
+
+        # Assert
+        self.assertEqual(
+            [
+                value
+                for value in values
+                if value != value.lower() or not all(c in "0123456789abcdef" for c in value)
+            ],
+            [],
+        )
 
 
 class ChainTest(unittest.TestCase):
     def test_the_patch_is_named_with_its_author_and_where_it_lives(self) -> None:
-        self.assertEqual(editions.PATCH.author, "neviksti")
-        self.assertTrue(editions.PATCH.where.startswith("https://"))
-        self.assertTrue(editions.PATCH.version)
+        # Arrange
+        patch = starocean.PATCH
+
+        # Act
+        held = (patch.author, patch.where.startswith("https://"), bool(patch.version))
+
+        # Assert
+        self.assertEqual(held, ("neviksti", True, True))
 
     def test_the_archive_carrying_the_patch_is_pinned(self) -> None:
-        for digest, width in editions.DIGEST_WIDTHS.items():
-            self.assertEqual(len(str(editions.PATCH.archive[digest])), width, digest)
+        # Arrange
+        archive = starocean.PATCH.archive
+
+        # Act
+        widths = {name: len(str(archive[name])) for name in WIDTHS}
+
+        # Assert
+        self.assertEqual(widths, WIDTHS)
 
     def test_every_edition_names_the_cartridge_it_starts_from(self) -> None:
-        for edition in editions.EDITIONS:
-            self.assertTrue(edition.source["name"])
-            self.assertGreater(edition.source["bytes"], 0)
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        unnamed = [
+            one.name for one in catalogue if not one.source["name"] or one.source["bytes"] <= 0
+        ]
+
+        # Assert
+        self.assertEqual(unnamed, [])
 
     def test_and_the_patch_that_turns_it_into_the_image_read(self) -> None:
-        for edition in editions.EDITIONS:
-            self.assertTrue(edition.patch["name"].endswith(".xdelta"))
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        astray = [
+            one.patch["name"] for one in catalogue if not one.patch["name"].endswith(".xdelta")
+        ]
+
+        # Assert
+        self.assertEqual(astray, [])
 
     def test_each_edition_uses_a_patch_of_its_own(self) -> None:
-        used = [edition.patch["name"] for edition in editions.EDITIONS]
+        # Arrange
+        catalogue = starocean.EDITIONS
 
+        # Act
+        used = [one.patch["name"] for one in catalogue]
+
+        # Assert
         self.assertEqual(len(used), len(set(used)))
 
     def test_each_edition_starts_from_a_cartridge_of_its_own(self) -> None:
-        used = [edition.source["sha256"] for edition in editions.EDITIONS]
+        # Arrange
+        catalogue = starocean.EDITIONS
 
+        # Act
+        used = [one.source["sha256"] for one in catalogue]
+
+        # Assert
         self.assertEqual(len(used), len(set(used)))
 
     def test_every_link_in_the_chain_pins_all_four_digests(self) -> None:
-        for edition in editions.EDITIONS:
-            for link in (edition.source, edition.patch, edition.before, edition.after):
-                for digest, width in editions.DIGEST_WIDTHS.items():
-                    self.assertEqual(len(link[digest]), width, (edition.name, digest))
+        # Arrange
+        catalogue = starocean.EDITIONS
 
-    def test_the_cartridge_is_smaller_than_what_the_patch_makes_of_it(self) -> None:
-        for edition in editions.EDITIONS:
-            self.assertLess(edition.source["bytes"], edition.size, edition.name)
-
-    def test_every_link_of_every_edition_is_a_distinct_file(self) -> None:
-        seen = [
-            link["sha256"]
-            for edition in editions.EDITIONS
-            for link in (edition.source, edition.patch, edition.before, edition.after)
+        # Act
+        widths = [
+            {name: len(link[name]) for name in WIDTHS}
+            for one in catalogue
+            for link in (one.source, one.patch, one.before, one.after)
         ]
 
+        # Assert
+        self.assertEqual(widths, [WIDTHS] * 8)
+
+    def test_the_cartridge_is_smaller_than_what_the_patch_makes_of_it(self) -> None:
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        grown = [one.source["bytes"] < one.size for one in catalogue]
+
+        # Assert
+        self.assertEqual(grown, [True, True])
+
+    def test_every_link_of_every_edition_is_a_distinct_file(self) -> None:
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        seen = [
+            link["sha256"]
+            for one in catalogue
+            for link in (one.source, one.patch, one.before, one.after)
+        ]
+
+        # Assert
         self.assertEqual(len(seen), len(set(seen)))
 
     def test_the_chain_is_offered_in_the_order_it_is_walked(self) -> None:
-        walked = editions.EDITIONS[0].chain()
+        # Arrange
+        edition = starocean.named("japanese")
 
-        self.assertEqual(
-            [step.what for step in walked],
-            ["source", "patch", "reads", "writes"],
-        )
+        # Act
+        walked = edition.chain()
+
+        # Assert
+        self.assertEqual([step.what for step in walked], ["source", "patch", "reads", "writes"])
 
     def test_every_step_of_the_chain_carries_a_name_and_a_length(self) -> None:
-        for edition in editions.EDITIONS:
-            for step in edition.chain():
-                self.assertTrue(step.name, (edition.name, step.what))
-                self.assertGreater(step.bytes, 0, (edition.name, step.what))
+        # Arrange
+        catalogue = starocean.EDITIONS
+
+        # Act
+        bare = [
+            (one.name, step.what)
+            for one in catalogue
+            for step in one.chain()
+            if not step.name or step.bytes <= 0
+        ]
+
+        # Assert
+        self.assertEqual(bare, [])
 
     def test_a_step_prints_as_what_it_is_and_what_it_names(self) -> None:
-        step = editions.EDITIONS[0].chain()[0]
+        # Arrange
+        step = starocean.named("japanese").chain()[2]
 
-        self.assertIn(step.what, repr(step))
-        self.assertIn(step.name, repr(step))
+        # Act
+        printed = repr(step)
+
+        # Assert
+        self.assertEqual(printed, f"<Step reads: {step.name}, 12582912 bytes>")
 
     def test_a_patch_prints_as_its_name_version_and_author(self) -> None:
-        printed = repr(editions.PATCH)
+        # Arrange
+        patch = starocean.PATCH
 
-        self.assertIn(editions.PATCH.author, printed)
-        self.assertIn(editions.PATCH.version, printed)
+        # Act
+        printed = repr(patch)
 
-    def test_a_step_offers_the_digest_that_decides_and_any_other(self) -> None:
-        step = editions.EDITIONS[0].chain()[0]
+        # Assert
+        self.assertEqual(printed, f"<Patch {patch.name} {patch.version}, by neviksti>")
 
-        self.assertEqual(step.digest(), step.held[editions.DECIDES])
-        self.assertEqual(step.digest("crc32"), step.held["crc32"])
+    def test_a_step_offers_the_digest_that_decides_by_default(self) -> None:
+        # Arrange
+        step = starocean.named("japanese").chain()[0]
+
+        # Act
+        found = step.digest()
+
+        # Assert
+        self.assertEqual(found, step.held["sha256"])
+
+    def test_and_any_other_when_asked(self) -> None:
+        # Arrange
+        step = starocean.named("japanese").chain()[0]
+
+        # Act
+        found = step.digest("crc32")
+
+        # Assert
+        self.assertEqual(found, step.held["crc32"])
 
     def test_only_the_last_step_is_one_this_repository_produces(self) -> None:
-        for edition in editions.EDITIONS:
-            produced = [step.what for step in edition.chain() if step.produced]
+        # Arrange
+        catalogue = starocean.EDITIONS
 
-            self.assertEqual(produced, ["writes"])
+        # Act
+        produced = [[step.what for step in one.chain() if step.produced] for one in catalogue]
+
+        # Assert
+        self.assertEqual(produced, [["writes"], ["writes"]])
 
 
 class LookupTest(unittest.TestCase):
     def test_an_edition_is_found_by_the_digest_of_what_it_reads(self) -> None:
-        wanted = editions.EDITIONS[0]
+        # Arrange
+        wanted = starocean.named("english")
 
-        self.assertIs(editions.matching(wanted.before[editions.DECIDES]), wanted)
+        # Act
+        found = starocean.matching(wanted.before["sha256"])
+
+        # Assert
+        self.assertIs(found, wanted)
 
     def test_a_digest_no_edition_carries_finds_nothing(self) -> None:
-        self.assertIsNone(editions.matching("0" * 64))
+        # Arrange
+        digest = "0" * 64
+
+        # Act
+        found = starocean.matching(digest)
+
+        # Assert
+        self.assertIsNone(found)
 
     def test_an_edition_is_found_by_name(self) -> None:
-        wanted = editions.EDITIONS[0]
+        # Arrange
+        name = "english"
 
-        self.assertIs(editions.named(wanted.name), wanted)
+        # Act
+        found = starocean.named(name)
+
+        # Assert
+        self.assertEqual(found.name, name)
 
     def test_a_name_no_edition_carries_is_refused(self) -> None:
-        with self.assertRaises(UnknownEdition):
-            editions.named("nonsense")
+        # Arrange
+        name = "nonsense"
+
+        # Act
+        attempt = lambda: starocean.named(name)  # noqa: E731
+
+        # Assert
+        self.assertRaises(starocean.UnknownEdition, attempt)
 
     def test_the_refusal_lists_the_editions_there_are(self) -> None:
-        with self.assertRaises(UnknownEdition) as raised:
-            editions.named("nonsense")
+        # Arrange
+        name = "nonsense"
 
-        for edition in editions.EDITIONS:
-            self.assertIn(edition.name, str(raised.exception))
+        # Act
+        with self.assertRaises(starocean.UnknownEdition) as raised:
+            starocean.named(name)
 
-    def test_a_lookup_can_be_pointed_at_a_different_set(self) -> None:
-        only = (editions.EDITIONS[1],)
-
-        self.assertIs(editions.named(only[0].name, among=only), only[0])
-        self.assertIsNone(
-            editions.matching(editions.EDITIONS[0].before[editions.DECIDES], among=only)
+        # Assert
+        self.assertEqual(
+            str(raised.exception),
+            "nonsense is not an edition this corrects; there are japanese, english",
         )
+
+    def test_a_lookup_by_name_can_be_pointed_at_a_different_set(self) -> None:
+        # Arrange
+        only = (starocean.named("english"),)
+
+        # Act
+        found = starocean.named("english", among=only)
+
+        # Assert
+        self.assertIs(found, only[0])
+
+    def test_and_so_can_a_lookup_by_digest(self) -> None:
+        # Arrange
+        only = (starocean.named("english"),)
+
+        # Act
+        found = starocean.matching(starocean.named("japanese").before["sha256"], among=only)
+
+        # Assert
+        self.assertIsNone(found)
 
 
 class DecidingDigestTest(unittest.TestCase):
     def held(self) -> str:
-        return str(json.loads(editions.MANIFEST.read_text())["decides"])
+        return str(json.loads(MANIFEST.read_text())["decides"])
 
     def test_the_manifest_names_the_digest_that_decides(self) -> None:
-        self.assertIn(editions.DECIDES, self.held())
+        # Arrange
+        published = starocean.DECIDES
+
+        # Act
+        said = self.held()
+
+        # Assert
+        self.assertEqual(published, "sha256")
+        self.assertIn(published, said)
 
     def test_and_says_the_others_decide_nothing(self) -> None:
-        self.assertIn("decides anything on its own", self.held())
+        # Arrange
+        phrase = "decides anything on its own"
+
+        # Act
+        said = self.held()
+
+        # Assert
+        self.assertIn(phrase, said)
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
-import json
 import os
 import re
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 import unittest.mock
 from pathlib import Path
@@ -15,7 +15,8 @@ sys.path.append(
     str(Path(__file__).resolve().parent.parent / "snes-rom-image-python" / "snes-mapper-python")
 )
 
-from starocean import doctor, editions
+import starocean
+from starocean import doctor
 
 VERDICT = re.compile(r"^  (\d+ checks, nothing to report|\d+ of \d+ checks did not pass)$")
 
@@ -24,313 +25,361 @@ class Complaint(Exception):
     pass
 
 
-def a_file(body: str) -> Path:
-    where = Path(tempfile.mkdtemp()) / "held.json"
-    where.write_text(body)
-    return where
+class Short:
+    name = "shortened"
+    size = 1
+
+    def chain(self) -> tuple[Any, ...]:
+        return ()
 
 
-def refusing() -> Any:
-    def refuse() -> Any:
-        raise Complaint("no")
+def refuse() -> Any:
+    raise Complaint("no")
 
-    return unittest.mock.patch.object(doctor, "_loaded", refuse)
+
+def shortened() -> Any:
+    return types.SimpleNamespace(EDITIONS=(Short(),)), None
 
 
 class FindingTest(unittest.TestCase):
     def test_a_finding_says_what_was_checked(self) -> None:
-        one = doctor.Finding("python", True, "3.14")
+        # Arrange
+        name = "python"
 
+        # Act
+        one = doctor.Finding(name, True, "3.14")
+
+        # Assert
         self.assertEqual(one.name, "python")
 
     def test_a_healthy_finding_prints_with_a_mark_that_says_so(self) -> None:
+        # Arrange
         one = doctor.Finding("python", True, "3.14")
 
-        self.assertIn("ok", one.line)
+        # Act
+        line = one.line
+
+        # Assert
+        self.assertEqual(line, "  ok    python: 3.14")
 
     def test_and_an_unhealthy_one_prints_differently(self) -> None:
+        # Arrange
         one = doctor.Finding("python", False, "3.9")
 
-        self.assertNotIn("ok", one.line)
+        # Act
+        line = one.line
+
+        # Assert
+        self.assertEqual(line, "     !  python: 3.9")
 
     def test_an_unhealthy_finding_says_what_to_do_about_it(self) -> None:
+        # Arrange
         one = doctor.Finding("python", False, "3.9", "upgrade")
 
-        self.assertIn("upgrade", one.report)
+        # Act
+        printed = one.report
+
+        # Assert
+        self.assertEqual(printed, "     !  python: 3.9\n         upgrade")
 
     def test_a_healthy_one_keeps_its_advice_to_itself(self) -> None:
+        # Arrange
         one = doctor.Finding("python", True, "3.14", "upgrade")
 
-        self.assertNotIn("upgrade", one.report)
+        # Act
+        printed = one.report
+
+        # Assert
+        self.assertNotIn("upgrade", printed)
 
     def test_and_so_does_an_unhealthy_one_with_none_to_give(self) -> None:
+        # Arrange
         one = doctor.Finding("python", False, "3.9")
 
-        self.assertEqual(one.report, one.line)
+        # Act
+        printed = one.report
+
+        # Assert
+        self.assertEqual(printed, one.line)
 
     def test_a_finding_prints_as_itself(self) -> None:
+        # Arrange
         one = doctor.Finding("python", False, "3.9")
 
-        self.assertEqual(repr(one), "<Finding python not ok>")
+        # Act
+        printed = repr(one)
+
+        # Assert
+        self.assertEqual(printed, "<Finding python not ok>")
 
     def test_and_says_so_when_it_is_well(self) -> None:
+        # Arrange
         one = doctor.Finding("python", True, "3.14")
 
-        self.assertEqual(repr(one), "<Finding python ok>")
+        # Act
+        printed = repr(one)
+
+        # Assert
+        self.assertEqual(printed, "<Finding python ok>")
 
 
 class VersionTest(unittest.TestCase):
     def test_it_reports_the_python_it_is_running_on(self) -> None:
-        one = doctor._python()
+        # Arrange
+        oldest = (3, 12)
 
-        self.assertTrue(one.ok, one.detail)
+        # Act
+        one = doctor.check_python()
+
+        # Assert
+        self.assertEqual(one.ok, sys.version_info[:2] >= oldest, one.detail)
 
     def test_and_names_the_package(self) -> None:
-        one = doctor._package()
+        # Arrange
+        expected = f"version {starocean.VERSION}"
 
-        self.assertEqual(one.name, "starocean")
+        # Act
+        one = doctor.check_package()
+
+        # Assert
+        self.assertEqual((one.name, one.detail), ("starocean", expected))
 
     def test_the_version_is_read_out_of_the_file_rather_than_imported(self) -> None:
-        from starocean.version import VERSION
+        # Arrange
+        where = Path(tempfile.mkdtemp()) / "version.py"
+        where.write_text('VERSION = "4.5.6"\n')
 
-        self.assertEqual(doctor.VERSION, VERSION)
+        # Act
+        found = doctor.installed_version(where)
+
+        # Assert
+        self.assertEqual(found, "4.5.6")
+
+    def test_and_the_one_it_reads_here_is_the_package_s_own(self) -> None:
+        # Arrange
+        published = starocean.VERSION
+
+        # Act
+        found = doctor.installed_version()
+
+        # Assert
+        self.assertEqual(found, published)
 
     def test_a_version_file_naming_nothing_reads_as_unknown(self) -> None:
+        # Arrange
         where = Path(tempfile.mkdtemp()) / "version.py"
         where.write_text("NOTHING = 1\n")
 
-        self.assertEqual(doctor._version(where), "unknown")
+        # Act
+        found = doctor.installed_version(where)
+
+        # Assert
+        self.assertEqual(found, "unknown")
 
     def test_the_repository_is_put_on_the_path_when_it_is_not_already_there(self) -> None:
+        # Arrange
         held = [one for one in sys.path if one != str(doctor.ROOT)]
 
+        # Act
         with unittest.mock.patch.object(sys, "path", held):
-            doctor._loaded()
+            doctor.check_editions()
 
-            self.assertIn(str(doctor.ROOT), held)
+        # Assert
+        self.assertIn(str(doctor.ROOT), held)
 
 
 class EditionTest(unittest.TestCase):
     def test_every_edition_names_a_full_chain(self) -> None:
-        one = doctor._editions()
+        # Arrange
+        expected = "japanese at 12582912 bytes, english at 12582912 bytes"
 
-        self.assertTrue(one.ok, one.detail)
+        # Act
+        one = doctor.check_editions()
 
-    def test_and_each_of_them_appears_in_the_line(self) -> None:
-        one = doctor._editions()
-
-        self.assertTrue(all(held.name in one.detail for held in editions.EDITIONS), one.detail)
+        # Assert
+        self.assertEqual((one.ok, one.detail), (True, expected))
 
     def test_an_edition_with_a_link_missing_is_named(self) -> None:
-        class Short:
-            name = "shortened"
-            size = 1
+        # Arrange
+        load = shortened
 
-            def chain(self) -> tuple[Any, ...]:
-                return ()
+        # Act
+        one = doctor.check_editions(load)
 
-        with unittest.mock.patch.object(editions, "EDITIONS", (Short(),)):
-            one = doctor._editions()
-
+        # Assert
         self.assertIn("shortened", one.advice or "")
 
     def test_and_the_finding_is_not_well(self) -> None:
-        class Short:
-            name = "shortened"
-            size = 1
+        # Arrange
+        load = shortened
 
-            def chain(self) -> tuple[Any, ...]:
-                return ()
+        # Act
+        one = doctor.check_editions(load)
 
-        with unittest.mock.patch.object(editions, "EDITIONS", (Short(),)):
-            one = doctor._editions()
-
+        # Assert
         self.assertFalse(one.ok)
 
     def test_a_package_that_will_not_import_is_reported_as_what_it_said(self) -> None:
-        with refusing():
-            one = doctor._editions()
+        # Arrange
+        load = refuse
 
-        self.assertIn("Complaint", one.detail)
+        # Act
+        one = doctor.check_editions(load)
+
+        # Assert
+        self.assertEqual((one.ok, one.detail), (False, "Complaint: no"))
 
 
 class ChainTest(unittest.TestCase):
     def test_every_link_of_every_chain_gets_a_line(self) -> None:
-        found = doctor._chain()
-        wanted = sum(len(one.chain()) for one in editions.EDITIONS)
+        # Arrange
+        wanted = 4 * len(starocean.EDITIONS)
 
+        # Act
+        found = doctor.check_chain()
+
+        # Assert
         self.assertEqual(len(found), wanted)
 
     def test_the_written_image_is_looked_for_where_it_is_written(self) -> None:
-        found = [one for one in doctor._chain() if one.name.endswith(doctor.WRITES)]
+        # Arrange
+        written = "writes"
 
-        self.assertTrue(all(doctor.DESTINATION.name in one.detail for one in found), found)
+        # Act
+        found = [one for one in doctor.check_chain() if one.name.endswith(written)]
+
+        # Assert
+        self.assertTrue(found)
+        self.assertEqual([one for one in found if " at dist/" not in one.detail], [])
 
     def test_and_every_other_link_where_it_is_read(self) -> None:
-        found = [one for one in doctor._chain() if not one.name.endswith(doctor.WRITES)]
+        # Arrange
+        written = "writes"
 
-        self.assertTrue(all(doctor.SOURCE.name in one.detail for one in found), found)
+        # Act
+        found = [one for one in doctor.check_chain() if not one.name.endswith(written)]
+
+        # Assert
+        self.assertTrue(found)
+        self.assertEqual([one for one in found if " at roms/" not in one.detail], [])
 
     def test_a_file_that_is_not_there_is_said_to_be_absent(self) -> None:
-        with unittest.mock.patch.object(doctor, "SOURCE", Path(tempfile.mkdtemp())):
-            found = doctor._chain()
+        # Arrange
+        empty = Path(tempfile.mkdtemp())
 
+        # Act
+        with unittest.mock.patch.object(doctor, "SOURCE", empty):
+            found = doctor.check_chain()
+
+        # Assert
         self.assertTrue(any("is not at" in one.detail for one in found))
 
     def test_a_package_that_will_not_import_reports_no_chain_at_all(self) -> None:
-        with refusing():
-            found = doctor._chain()
+        # Arrange
+        load = refuse
 
+        # Act
+        found = doctor.check_chain(load)
+
+        # Assert
         self.assertEqual(found, [])
-
-
-class SubmoduleTest(unittest.TestCase):
-    def test_every_submodule_this_repository_carries_is_checked_out(self) -> None:
-        absent = [name for name in doctor.SUBMODULES if not doctor._submodule(name).ok]
-
-        self.assertEqual(absent, [])
-
-    def test_a_submodule_that_is_not_there_is_reported(self) -> None:
-        one = doctor._submodule("absent", Path(tempfile.mkdtemp()))
-
-        self.assertIn("is not there", one.detail)
-
-    def test_a_directory_git_left_empty_is_reported_as_empty(self) -> None:
-        where = Path(tempfile.mkdtemp())
-        (where / "hollow").mkdir()
-
-        one = doctor._submodule("hollow", where)
-
-        self.assertIn("is empty", one.detail)
-
-    def test_and_neither_is_well_because_nothing_here_runs_without_it(self) -> None:
-        one = doctor._submodule("absent", Path(tempfile.mkdtemp()))
-
-        self.assertFalse(one.ok)
-
-
-class ManifestTest(unittest.TestCase):
-    def test_the_manifest_beside_the_package_pins_editions(self) -> None:
-        one = doctor._manifest()
-
-        self.assertTrue(one.ok, one.detail)
-
-    def test_and_records_the_outputs_a_previous_correction_produced(self) -> None:
-        one = doctor._manifest()
-
-        self.assertIn("superseded", one.detail)
-
-    def test_a_manifest_that_is_not_there_is_reported(self) -> None:
-        one = doctor._manifest(Path(tempfile.mkdtemp()) / "absent.json")
-
-        self.assertFalse(one.ok)
-
-    def test_a_manifest_that_is_not_json_is_reported_differently(self) -> None:
-        one = doctor._manifest(a_file("{"))
-
-        self.assertIn("not readable as JSON", one.detail)
-
-    def test_a_manifest_pinning_nothing_is_not_well(self) -> None:
-        one = doctor._manifest(a_file('{"editions": []}'))
-
-        self.assertFalse(one.ok)
-
-    def test_a_manifest_with_no_superseded_digests_says_that_rather_than_nothing(self) -> None:
-        one = doctor._manifest(a_file(json.dumps({"editions": [{"name": "one"}]})))
-
-        self.assertIn("none carrying superseded digests", one.detail)
-
-
-class SourceTest(unittest.TestCase):
-    def test_a_directory_of_images_is_counted(self) -> None:
-        where = Path(tempfile.mkdtemp())
-        (where / "one.sfc").write_bytes(b"\x00")
-
-        one = doctor._source(where)
-
-        self.assertIn("1 files", one.detail)
-
-    def test_a_directory_that_is_not_there_is_reported_as_nothing_to_do(self) -> None:
-        one = doctor._source(Path(tempfile.mkdtemp()) / "absent")
-
-        self.assertIn("nothing to correct", one.detail)
-
-    def test_and_is_not_a_fault_because_a_fresh_checkout_has_none(self) -> None:
-        one = doctor._source(Path(tempfile.mkdtemp()) / "absent")
-
-        self.assertTrue(one.ok)
-
-    def test_an_empty_directory_says_so_too(self) -> None:
-        one = doctor._source(Path(tempfile.mkdtemp()))
-
-        self.assertIn("empty", one.detail)
-
-    def test_a_directory_that_cannot_be_read_is_reported_as_what_it_said(self) -> None:
-        def refuse(*_: Any, **__: Any) -> Any:
-            raise OSError("permission denied")
-
-        with unittest.mock.patch.object(Path, "iterdir", refuse):
-            one = doctor._source(Path(tempfile.mkdtemp()))
-
-        self.assertIn("permission denied", one.detail)
 
 
 class ExamineTest(unittest.TestCase):
     def test_the_examination_produces_findings(self) -> None:
+        # Arrange
+        expected = doctor.Finding
+
+        # Act
         found = doctor.examine()
 
-        self.assertTrue(all(isinstance(one, doctor.Finding) for one in found))
+        # Assert
+        self.assertEqual({type(one) for one in found}, {expected})
 
     def test_it_looks_at_every_submodule_this_repository_carries(self) -> None:
+        # Arrange
+        wanted = "submodule snes-rom-image-python"
+
+        # Act
         named = {one.name for one in doctor.examine()}
 
-        self.assertTrue({f"submodule {name}" for name in doctor.SUBMODULES} <= named, named)
+        # Assert
+        self.assertIn(wanted, named)
 
     def test_and_nothing_it_looks_at_is_unwell_on_this_machine(self) -> None:
+        # Arrange
+        healthy: list[str] = []
+
+        # Act
         unwell = [one.name for one in doctor.examine() if not one.ok]
 
-        self.assertEqual(unwell, [])
+        # Assert
+        self.assertEqual(unwell, healthy)
 
 
 class ReportTest(unittest.TestCase):
     def test_a_clean_examination_says_there_is_nothing_to_report(self) -> None:
-        lines = doctor.report([doctor.Finding("one", True, "fine")])
+        # Arrange
+        found = [doctor.Finding("one", True, "fine")]
 
-        self.assertIn("nothing to report", lines[-1])
+        # Act
+        lines = doctor.report(found)
+
+        # Assert
+        self.assertEqual(lines[-1], "  1 checks, nothing to report")
 
     def test_and_a_dirty_one_counts_what_did_not_pass(self) -> None:
-        lines = doctor.report(
-            [doctor.Finding("one", True, "fine"), doctor.Finding("two", False, "not")]
-        )
+        # Arrange
+        found = [doctor.Finding("one", True, "fine"), doctor.Finding("two", False, "not")]
 
-        self.assertIn("1 of 2", lines[-1])
+        # Act
+        lines = doctor.report(found)
+
+        # Assert
+        self.assertEqual(lines[-1], "  1 of 2 checks did not pass")
 
 
 class MainTest(unittest.TestCase):
     def test_a_clean_machine_exits_zero(self) -> None:
-        code = doctor.main((), lambda: [doctor.Finding("one", True, "fine")], lambda _: None)
+        # Arrange
+        clean = [doctor.Finding("one", True, "fine")]
 
+        # Act
+        code = doctor.main((), lambda: clean, lambda _: None)
+
+        # Assert
         self.assertEqual(code, 0)
 
     def test_and_a_machine_with_a_finding_exits_one(self) -> None:
-        code = doctor.main((), lambda: [doctor.Finding("one", False, "not")], lambda _: None)
+        # Arrange
+        dirty = [doctor.Finding("one", False, "not")]
 
+        # Act
+        code = doctor.main((), lambda: dirty, lambda _: None)
+
+        # Assert
         self.assertEqual(code, 1)
 
     def test_the_report_is_said_rather_than_returned(self) -> None:
+        # Arrange
         said: list[str] = []
 
+        # Act
         doctor.main((), lambda: [doctor.Finding("one", True, "fine")], said.append)
 
-        self.assertTrue(any("nothing to report" in one for one in said))
+        # Assert
+        self.assertEqual(said[-1], "  1 checks, nothing to report")
 
     def test_it_runs_end_to_end_whatever_this_machine_holds(self) -> None:
+        # Arrange
         said: list[str] = []
 
+        # Act
         code = doctor.main((), doctor.examine, said.append)
 
+        # Assert
         self.assertIn(code, (0, 1))
-        self.assertGreaterEqual(len(said), len(doctor.examine()))
+        self.assertRegex(said[-1], VERDICT)
 
 
 class TheDoctorRunsWhereThePackageMightNotImportTest(unittest.TestCase):
@@ -339,7 +388,7 @@ class TheDoctorRunsWhereThePackageMightNotImportTest(unittest.TestCase):
         path: list[str] = []
 
         # Act
-        added = doctor._reachable(Path("/somewhere"), path)
+        added = doctor.reachable(Path("/somewhere"), path)
 
         # Assert
         self.assertEqual((added, path), (True, ["/somewhere"]))
@@ -349,7 +398,7 @@ class TheDoctorRunsWhereThePackageMightNotImportTest(unittest.TestCase):
         path = ["/somewhere"]
 
         # Act
-        added = doctor._reachable(Path("/somewhere"), path)
+        added = doctor.reachable(Path("/somewhere"), path)
 
         # Assert
         self.assertEqual((added, path), (False, ["/somewhere"]))

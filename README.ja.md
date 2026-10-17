@@ -8,7 +8,7 @@ nevikstiによる2つの96 Mbit版Star Oceanリビルドのためのヘッダー
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2**つのエディション、イメージごとに変更されるのは**12**バイトでそれ以外は変更なし、2つのチェーン全体で**32**個の固定ダイジェスト、不一致**0**件、**593**件のテスト、ステートメントとブランチの**100%**カバレッジ、依存関係なし
+**2**つのエディション、イメージごとに変更されるのは**12**バイトでそれ以外は変更なし、2つのチェーン全体で**32**個の固定ダイジェスト、不一致**0**件、**615**件のテスト、ステートメントとブランチの**100%**カバレッジ、依存関係なし
 
 ```python
 import tempfile

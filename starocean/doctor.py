@@ -11,7 +11,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable, Sequence
 
 
-def _version(where: Path | None = None) -> str:
+def installed_version(where: Path | None = None) -> str:
     found = re.search(
         r"""VERSION\s*[:=][^"']*["']([^"']+)["']""",
         (where or Path(__file__).resolve().parent / "version.py").read_text(),
@@ -19,12 +19,12 @@ def _version(where: Path | None = None) -> str:
     return found.group(1) if found else "unknown"
 
 
-VERSION = _version()
+VERSION = installed_version()
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def _reachable(root: Path = ROOT, path: list[str] | None = None) -> bool:
+def reachable(root: Path = ROOT, path: list[str] | None = None) -> bool:
     where = sys.path if path is None else path
     if str(root) in where:
         return False
@@ -32,7 +32,7 @@ def _reachable(root: Path = ROOT, path: list[str] | None = None) -> bool:
     return True
 
 
-_reachable()
+reachable()
 
 from starocean import environment  # noqa: E402
 
@@ -75,7 +75,7 @@ class Finding:
         return f"<Finding {self.name} {'ok' if self.ok else 'not ok'}>"
 
 
-def _python() -> Finding:
+def check_python() -> Finding:
     return Finding(
         "python",
         sys.version_info[:2] >= OLDEST_PYTHON,
@@ -84,7 +84,7 @@ def _python() -> Finding:
     )
 
 
-def _package() -> Finding:
+def check_package() -> Finding:
     return Finding("starocean", True, f"version {VERSION}")
 
 
@@ -96,9 +96,9 @@ def _loaded() -> Any:
     return editions, verify
 
 
-def _editions() -> Finding:
+def check_editions(load: Callable[[], Any] = _loaded) -> Finding:
     try:
-        editions, _ = _loaded()
+        editions, _ = load()
         held = editions.EDITIONS
     except Exception as trouble:
         return Finding(
@@ -118,9 +118,9 @@ def _editions() -> Finding:
     )
 
 
-def _chain() -> list[Finding]:
+def check_chain(load: Callable[[], Any] = _loaded) -> list[Finding]:
     try:
-        editions, _ = _loaded()
+        editions, _ = load()
         held = editions.EDITIONS
     except Exception:
         return []
@@ -141,7 +141,7 @@ def _chain() -> list[Finding]:
     return found
 
 
-def _submodule(name: str, root: Path = ROOT) -> Finding:
+def check_submodule(name: str, root: Path = ROOT) -> Finding:
     where = root / name
     if (where / "pyproject.toml").is_file():
         return Finding(f"submodule {name}", True, f"checked out at {where}")
@@ -154,7 +154,7 @@ def _submodule(name: str, root: Path = ROOT) -> Finding:
     )
 
 
-def _manifest(path: Path | str = MANIFEST) -> Finding:
+def check_manifest(path: Path | str = MANIFEST) -> Finding:
     try:
         held = json.loads(Path(path).read_text())
     except OSError as trouble:
@@ -187,7 +187,7 @@ def _manifest(path: Path | str = MANIFEST) -> Finding:
     )
 
 
-def _source(where: Path = SOURCE) -> Finding:
+def check_source(where: Path = SOURCE) -> Finding:
     if not where.is_dir():
         return Finding(
             "images",
@@ -213,13 +213,13 @@ def examine(
     source: Path = SOURCE,
 ) -> list[Finding]:
     return [
-        _python(),
-        _package(),
-        _editions(),
-        *(_submodule(name, root) for name in SUBMODULES),
-        _manifest(manifest),
-        _source(source),
-        *_chain(),
+        check_python(),
+        check_package(),
+        check_editions(),
+        *(check_submodule(name, root) for name in SUBMODULES),
+        check_manifest(manifest),
+        check_source(source),
+        *check_chain(),
     ]
 
 

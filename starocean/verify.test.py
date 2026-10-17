@@ -9,7 +9,8 @@ from typing import Any, override
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from starocean import editions, verify
+import starocean
+from starocean import verify
 
 
 def digests_of(blob: bytes) -> dict[str, Any]:
@@ -22,9 +23,9 @@ def digests_of(blob: bytes) -> dict[str, Any]:
     }
 
 
-def an_edition(name: str = "made-up", **files: bytes) -> editions.Edition:
+def an_edition(name: str = "made-up", **files: bytes) -> starocean.Edition:
     held = {what: digests_of(blob) for what, blob in files.items()}
-    return editions.Edition(
+    return starocean.Edition(
         name=name,
         summary="a stand-in",
         reads="reads.sfc",
@@ -45,97 +46,143 @@ WRITES = b"the corrected image" * 20
 EDITION = an_edition(source=SOURCE, patch=PATCH, reads=READS, writes=WRITES)
 
 
+def states(where: Path, into: Path | None = None, edition: Any = EDITION) -> dict[str, str]:
+    return {one.step.what: one.state for one in starocean.look(where, (edition,), into)}
+
+
 class StateTest(unittest.TestCase):
     @override
     def setUp(self) -> None:
         self.where = Path(tempfile.mkdtemp())
 
     def test_a_file_that_is_not_there_is_reported_as_absent(self) -> None:
-        found = verify.look(self.where, (EDITION,))
+        # Arrange
+        catalogue = (EDITION,)
 
-        self.assertTrue(all(one.state == verify.ABSENT for one in found))
+        # Act
+        found = starocean.look(self.where, catalogue)
+
+        # Assert
+        self.assertEqual({one.state for one in found}, {starocean.ABSENT})
 
     def test_a_file_that_matches_is_reported_as_matching(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(READS)
 
-        found = {one.step.what: one.state for one in verify.look(self.where, (EDITION,))}
+        # Act
+        found = states(self.where)
 
-        self.assertEqual(found["reads"], verify.MATCHES)
+        # Assert
+        self.assertEqual(found["reads"], starocean.MATCHES)
 
     def test_a_file_of_the_right_length_and_wrong_content_is_altered(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(bytes(len(READS)))
 
-        found = {one.step.what: one.state for one in verify.look(self.where, (EDITION,))}
+        # Act
+        found = states(self.where)
 
-        self.assertEqual(found["reads"], verify.ALTERED)
+        # Assert
+        self.assertEqual(found["reads"], starocean.ALTERED)
 
     def test_a_file_of_the_wrong_length_is_altered_too(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(b"short")
 
-        found = {one.step.what: one.state for one in verify.look(self.where, (EDITION,))}
+        # Act
+        found = states(self.where)
 
-        self.assertEqual(found["reads"], verify.ALTERED)
+        # Assert
+        self.assertEqual(found["reads"], starocean.ALTERED)
 
     def test_a_file_matching_on_the_deciding_digest_but_not_the_rest_is_corrupt(self) -> None:
+        # Arrange
         edition = an_edition(source=SOURCE, patch=PATCH, reads=READS, writes=WRITES)
         edition.before = dict(edition.before, crc32="00000000")
         (self.where / "reads.sfc").write_bytes(READS)
 
-        found = {one.step.what: one.state for one in verify.look(self.where, (edition,))}
+        # Act
+        found = states(self.where, edition=edition)
 
-        self.assertEqual(found["reads"], verify.CORRUPT)
+        # Assert
+        self.assertEqual(found["reads"], starocean.CORRUPT)
 
     def test_every_step_of_the_chain_is_looked_for(self) -> None:
-        found = verify.look(self.where, (EDITION,))
+        # Arrange
+        catalogue = (EDITION,)
 
+        # Act
+        found = starocean.look(self.where, catalogue)
+
+        # Assert
         self.assertEqual([one.step.what for one in found], ["source", "patch", "reads", "writes"])
 
     def test_the_place_a_file_was_looked_for_is_reported(self) -> None:
+        # Arrange
         into = self.where / "out"
 
-        found = verify.look(self.where, (EDITION,), into)
+        # Act
+        found = starocean.look(self.where, (EDITION,), into)
 
-        for one in found:
-            wanted = into if one.step.produced else self.where
-            self.assertEqual(one.path.parent, wanted, one.step.what)
+        # Assert
+        self.assertEqual(
+            [one.path.parent for one in found], [self.where, self.where, self.where, into]
+        )
 
     def test_a_file_this_repository_makes_is_never_looked_for_among_the_sources(self) -> None:
+        # Arrange
         into = self.where / "out"
         (self.where / "writes.sfc").write_bytes(WRITES)
 
-        found = {one.step.what: one.state for one in verify.look(self.where, (EDITION,), into)}
+        # Act
+        found = states(self.where, into)
 
-        self.assertEqual(found["writes"], verify.ABSENT)
+        # Assert
+        self.assertEqual(found["writes"], starocean.ABSENT)
 
     def test_a_produced_file_is_looked_for_where_it_would_be_written(self) -> None:
+        # Arrange
         into = self.where / "out"
         into.mkdir()
         (into / "writes.sfc").write_bytes(WRITES)
 
-        found = {one.step.what: one.state for one in verify.look(self.where, (EDITION,), into)}
+        # Act
+        found = states(self.where, into)
 
-        self.assertEqual(found["writes"], verify.MATCHES)
+        # Assert
+        self.assertEqual(found["writes"], starocean.MATCHES)
 
     def test_a_directory_beneath_holding_something_else_is_walked_past(self) -> None:
+        # Arrange
         (self.where / "deep").mkdir()
         (self.where / "deep" / "reads.sfc").mkdir()
 
-        found = {one.step.what: one.state for one in verify.look(self.where, (EDITION,))}
+        # Act
+        found = states(self.where)
 
-        self.assertEqual(found["reads"], verify.ABSENT)
+        # Assert
+        self.assertEqual(found["reads"], starocean.ABSENT)
 
     def test_a_subdirectory_is_searched_as_well(self) -> None:
+        # Arrange
         (self.where / "somewhere").mkdir()
         (self.where / "somewhere" / "reads.sfc").write_bytes(READS)
 
-        found = {one.step.what: one.state for one in verify.look(self.where, (EDITION,))}
+        # Act
+        found = states(self.where)
 
-        self.assertEqual(found["reads"], verify.MATCHES)
+        # Assert
+        self.assertEqual(found["reads"], starocean.MATCHES)
 
     def test_a_finding_prints_as_its_state_and_what_it_names(self) -> None:
-        printed = repr(verify.look(self.where, (EDITION,))[0])
+        # Arrange
+        finding = starocean.look(self.where, (EDITION,))[0]
 
-        self.assertIn(verify.ABSENT, printed)
+        # Act
+        printed = repr(finding)
+
+        # Assert
+        self.assertIn(starocean.ABSENT, printed)
         self.assertIn("source.sfc", printed)
 
 
@@ -145,26 +192,36 @@ class ReportTest(unittest.TestCase):
         self.where = Path(tempfile.mkdtemp())
 
     def test_every_finding_makes_a_line(self) -> None:
-        found = verify.look(self.where, (EDITION,))
+        # Arrange
+        found = starocean.look(self.where, (EDITION,))
 
-        self.assertEqual(len(verify.report(found)), len(found))
+        # Act
+        lines = starocean.report(found)
+
+        # Assert
+        self.assertEqual(len(lines), 4)
 
     def test_a_line_names_the_edition_the_step_and_the_state(self) -> None:
-        line = verify.report(verify.look(self.where, (EDITION,)))[0]
+        # Arrange
+        found = starocean.look(self.where, (EDITION,))
 
+        # Act
+        line = starocean.report(found)[0]
+
+        # Assert
         self.assertIn("made-up", line)
         self.assertIn("source", line)
-        self.assertIn(verify.ABSENT, line)
+        self.assertIn(starocean.ABSENT, line)
 
     def test_an_altered_file_says_what_was_computed_so_it_can_be_looked_up(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(bytes(len(READS)))
+        found = starocean.look(self.where, (EDITION,))
 
-        lines = [
-            line
-            for line in verify.report(verify.look(self.where, (EDITION,)))
-            if verify.ALTERED in line
-        ]
+        # Act
+        lines = [line for line in starocean.report(found) if starocean.ALTERED in line]
 
+        # Assert
         self.assertIn(hashlib.sha256(bytes(len(READS))).hexdigest()[:16], lines[0])
 
 
@@ -174,9 +231,17 @@ class VerdictTest(unittest.TestCase):
         self.where = Path(tempfile.mkdtemp())
 
     def test_nothing_present_is_neither_pass_nor_fail(self) -> None:
-        self.assertEqual(verify.verdict(verify.look(self.where, (EDITION,))), verify.NOTHING)
+        # Arrange
+        found = starocean.look(self.where, (EDITION,))
+
+        # Act
+        decided = starocean.verdict(found)
+
+        # Assert
+        self.assertEqual(decided, starocean.NOTHING)
 
     def test_everything_present_and_matching_passes(self) -> None:
+        # Arrange
         for name, blob in (
             ("source.sfc", SOURCE),
             ("patch.xdelta", PATCH),
@@ -184,19 +249,46 @@ class VerdictTest(unittest.TestCase):
             ("writes.sfc", WRITES),
         ):
             (self.where / name).write_bytes(blob)
+        found = starocean.look(self.where, (EDITION,))
 
-        self.assertEqual(verify.verdict(verify.look(self.where, (EDITION,))), verify.SOUND)
+        # Act
+        decided = starocean.verdict(found)
+
+        # Assert
+        self.assertEqual(decided, starocean.SOUND)
 
     def test_one_file_present_and_matching_still_passes(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(READS)
+        found = starocean.look(self.where, (EDITION,))
 
-        self.assertEqual(verify.verdict(verify.look(self.where, (EDITION,))), verify.SOUND)
+        # Act
+        decided = starocean.verdict(found)
+
+        # Assert
+        self.assertEqual(decided, starocean.SOUND)
 
     def test_one_altered_file_fails_whatever_else_is_right(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(READS)
         (self.where / "source.sfc").write_bytes(b"not the cartridge")
+        found = starocean.look(self.where, (EDITION,))
 
-        self.assertEqual(verify.verdict(verify.look(self.where, (EDITION,))), verify.WRONG)
+        # Act
+        decided = starocean.verdict(found)
+
+        # Assert
+        self.assertEqual(decided, starocean.WRONG)
+
+    def test_the_three_verdicts_are_three_different_words(self) -> None:
+        # Arrange
+        words = (starocean.SOUND, starocean.WRONG, starocean.NOTHING)
+
+        # Act
+        distinct = set(words)
+
+        # Assert
+        self.assertEqual(distinct, {"sound", "wrong", "nothing"})
 
 
 class MainTest(unittest.TestCase):
@@ -205,47 +297,83 @@ class MainTest(unittest.TestCase):
         self.where = Path(tempfile.mkdtemp())
 
     def test_an_empty_directory_reports_that_nothing_was_found(self) -> None:
-        self.assertEqual(verify.main([str(self.where)], (EDITION,)), 2)
+        # Arrange
+        argv = [str(self.where)]
+
+        # Act
+        code = verify.main(argv, (EDITION,))
+
+        # Assert
+        self.assertEqual(code, 2)
 
     def test_a_directory_where_everything_matches_reports_success(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(READS)
 
-        self.assertEqual(verify.main([str(self.where)], (EDITION,)), 0)
+        # Act
+        code = verify.main([str(self.where)], (EDITION,))
+
+        # Assert
+        self.assertEqual(code, 0)
 
     def test_a_directory_with_an_altered_file_reports_failure(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(bytes(len(READS)))
 
-        self.assertEqual(verify.main([str(self.where)], (EDITION,)), 1)
+        # Act
+        code = verify.main([str(self.where)], (EDITION,))
+
+        # Assert
+        self.assertEqual(code, 1)
 
     def test_it_writes_nothing_whatever_it_finds(self) -> None:
+        # Arrange
         (self.where / "reads.sfc").write_bytes(READS)
         before = sorted(path.name for path in self.where.iterdir())
 
+        # Act
         verify.main([str(self.where)], (EDITION,))
 
+        # Assert
         self.assertEqual(sorted(path.name for path in self.where.iterdir()), before)
 
     def test_no_arguments_reads_the_directories_in_this_repository(self) -> None:
-        self.assertIn(verify.main([], (EDITION,)), (0, 1, 2))
+        # Arrange
+        argv: list[str] = []
+
+        # Act
+        code = verify.main(argv, (EDITION,))
+
+        # Assert
+        self.assertIn(code, (0, 1, 2))
 
     def test_a_second_argument_names_where_produced_files_are_looked_for(self) -> None:
+        # Arrange
         into = self.where / "out"
         into.mkdir()
         (into / "writes.sfc").write_bytes(WRITES)
 
-        self.assertEqual(verify.main([str(self.where), str(into)], (EDITION,)), 0)
+        # Act
+        code = verify.main([str(self.where), str(into)], (EDITION,))
+
+        # Assert
+        self.assertEqual(code, 0)
 
 
 class CommandTest(unittest.TestCase):
     def test_it_exits_with_what_the_run_decided(self) -> None:
-        with tempfile.TemporaryDirectory() as empty:
-            argv = [sys.argv[0], empty, empty]
-            with (
-                unittest.mock.patch.object(sys, "argv", argv),
-                self.assertRaises(SystemExit) as held,
-            ):
-                verify.command()
+        # Arrange
+        empty = tempfile.mkdtemp()
+        argv = [sys.argv[0], empty, empty]
 
+        # Act
+        with (
+            unittest.mock.patch.object(sys, "argv", argv),
+            self.assertRaises(SystemExit) as held,
+        ):
+            verify.command()
+
+        # Assert
         self.assertEqual(held.exception.code, 2)
 
 

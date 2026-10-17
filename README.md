@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2** editions, **12** bytes changed per image and none elsewhere, **32** pinned digests across the two chains, **0** disagreements, **593** tests, **100%** statement and branch coverage, no dependencies
+**2** editions, **12** bytes changed per image and none elsewhere, **32** pinned digests across the two chains, **0** disagreements, **615** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 import tempfile

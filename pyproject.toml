@@ -109,16 +109,9 @@ follow_imports = "skip"
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["starocean", "conformance"]
+source = ["."]
+omit = ["snes-rom-image-python/*"]
 branch = true
-omit = [
-  # Every check in here is skipped unless the images are on disk, and a skipped
-  # test contributes no coverage. On a runner with an empty directory the whole
-  # file would read as uncovered and fail the gate for a reason that has nothing
-  # to do with the code. The modules it exercises are measured by the tests
-  # beside them, so what is set aside is the bookkeeping of the checks.
-  "conformance/against_images.test.py",
-]
 
 [tool.coverage.report]
 fail_under = 100
