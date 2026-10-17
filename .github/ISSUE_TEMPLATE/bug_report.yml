@@ -1,3 +1,4 @@
+---
 name: Something is wrong
 description: A file is refused, the correction writes the wrong bytes, or nothing works at all
 labels: ["bug"]

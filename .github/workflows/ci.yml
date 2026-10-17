@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -54,6 +55,11 @@ jobs:
       - name: Lint the workflows
         uses: raven-actions/actionlint@v2
 
+      - name: Lint every YAML file
+        run: |
+          pipx install yamllint==1.38.0
+          yamllint --strict .
+
       - name: Lint the shell scripts
         run: |
           sudo apt-get update
@@ -75,10 +81,6 @@ jobs:
       - name: Install the type checker
         run: pipx install mypy==1.14.1
 
-      # Strict, with every optional error class the version offers. A model of
-      # hardware is masked integers and widths end to end, and a width crossing a
-      # boundary it should not is exactly what this catches. The settings live in
-      # pyproject.toml so a local run and this one agree.
       - name: Every annotation has to hold
         run: mypy
 
@@ -143,11 +145,8 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Say what is here before touching any of it
+      - name: Say what is here before touching any of it, failing only on a mismatch
         run: |
-          # verify exits 0 when what is here matches, 1 when something does not,
-          # and 2 when nothing from the chain is here at all. Only 1 is a failure:
-          # a hosted runner has none of these files and never will.
           status=0
           python starocean/verify.py roms dist || status="$?"
           if [ "${status}" -eq 1 ]; then
@@ -160,32 +159,41 @@ jobs:
           status=0
           python starocean/fix.py roms dist || status="$?"
           if [ "${status}" -eq 2 ]; then
-            echo "::notice title=Images::No image from the chain is present on a hosted runner, so the correction and the re-run were skipped rather than passed. They read two rebuilds of somebody else's patch, confirm each against four digests, correct the header, and confirm the result against four more. Run them locally with copies you own, or point STAR_OCEAN_ROM_DIR at them."
+            notice="No image from the chain is present on a hosted runner,"
+            notice="${notice} so the correction and the re-run were skipped rather than passed."
+            notice="${notice} They read two rebuilds of somebody else's patch,"
+            notice="${notice} confirm each against four digests, correct the header,"
+            notice="${notice} and confirm the result against four more."
+            notice="${notice} Run them locally with copies you own,"
+            notice="${notice} or point STAR_OCEAN_ROM_DIR at them."
+            echo "::notice title=Images::${notice}"
             exit 0
           fi
           exit "${status}"
         shell: bash
 
-      # A correction that is not idempotent is one nobody can safely re-run, and
-      # the failure is invisible because both runs write a file of the right
-      # length. Comparing what the two runs produced is the cheap way to see it.
       - name: Correct them again and compare what came out
         run: |
           if [ ! -d dist ]; then exit 0; fi
-          before=$(python -c 'import hashlib,pathlib,sys; print(*(hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(pathlib.Path("dist").iterdir())))')
+          digests() {
+            python - <<'PY'
+          import hashlib
+          import pathlib
+          held = sorted(pathlib.Path("dist").iterdir())
+          print(*(hashlib.sha256(one.read_bytes()).hexdigest() for one in held))
+          PY
+          }
+          before=$(digests)
           python starocean/fix.py roms dist
-          after=$(python -c 'import hashlib,pathlib,sys; print(*(hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(pathlib.Path("dist").iterdir())))')
+          after=$(digests)
           if [ "${before}" != "${after}" ]; then
             echo "::error title=Not idempotent::A second run produced different bytes"
             exit 1
           fi
         shell: bash
 
-      - name: Say what is here afterwards
+      - name: Say what is here afterwards, failing only on a mismatch
         run: |
-          # verify exits 0 when what is here matches, 1 when something does not,
-          # and 2 when nothing from the chain is here at all. Only 1 is a failure:
-          # a hosted runner has none of these files and never will.
           status=0
           python starocean/verify.py roms dist || status="$?"
           if [ "${status}" -eq 1 ]; then
