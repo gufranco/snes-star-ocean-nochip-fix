@@ -29,7 +29,7 @@ HEADER = 0x7FC0
 HEADER_BYTES = 32
 
 
-def image_of(edition: starocean.Edition) -> bytes:
+def image_of(edition: starocean.Edition) -> bytes:  # pragma: no cover
     return (SOURCE / edition.reads).read_bytes()
 
 
