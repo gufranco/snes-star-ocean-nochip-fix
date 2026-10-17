@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2** 个版本，每个镜像改动 **12** 个字节且别处不变，两条链共 **32** 个固定摘要，**0** 处不一致，**575** 个测试，**100%** 语句与分支覆盖率，无依赖
+**2** 个版本，每个镜像改动 **12** 个字节且别处不变，两条链共 **32** 个固定摘要，**0** 处不一致，**577** 个测试，**100%** 语句与分支覆盖率，无依赖
 
 ```python
 import tempfile
