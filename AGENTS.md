@@ -288,6 +288,38 @@ module of the same name.
 | Images | Never committed, in any form, for any reason. A digest is published; a byte of content is not |
 | Header knowledge | Belongs in the siblings. Adding a copy here creates a second source of truth |
 | The dependency | A submodule pinned by commit, never a copied file. See [FAMILY.md](FAMILY.md) |
+
+The settings in [`pyproject.toml`](pyproject.toml) carry no comments, so their
+reasons live here:
+
+- No `[project]` table: this consumes a sibling member as a submodule, so a
+  wheel built from here would install and then fail on its first import. The
+  check that the dependency tree is empty reads the imports instead.
+- `N818`: some exceptions are control flow signals rather than failures, named
+  the way the standard library names `StopIteration`. Real failures end in
+  `Error`.
+- `BLE001` and `T201` in `environment.py` and the doctor: a check that throws
+  has to become a line in the report rather than end the run, and printing is
+  their output.
+- `T201` in `fix.py`, `verify.py`, and the link, document and speed surveys:
+  these are command line tools whose printed report is their output, and each
+  exit code is the verdict.
+- `E402` in `fix.py`, `verify.py` and the tests: the submodules go on `sys.path`
+  before they can be imported, and nothing else runs first.
+- `RUF100` in [conformance/family.test.py](conformance/family.test.py): the
+  shared file carries directives for rules a member may have off. The reference
+  copy catches a stale one.
+- `N999` and `PLR2004` in tests: a test file is named after its module with a
+  dot, and its literals are the expected values.
+- The `romimage.*` and `mapper.*` override in mypy: the submodules are checked
+  in their own repositories, against their own gates.
+- The `__main__` guard and `def command():` in coverage: each hands argv to a
+  function that is itself tested.
+  [starocean/package.test.py](starocean/package.test.py) asserts that the entry
+  points resolve to `command`.
+- `TYPE_CHECKING` blocks and bare `...` bodies in coverage: they never run, and
+  Python 3.14 drops them before coverage sees them while 3.12 does not.
+
 ## Layout
 
 ```
