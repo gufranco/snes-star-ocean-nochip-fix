@@ -1,0 +1,4 @@
+{
+  "cartridges": [],
+  "none": "This tool corrects the header of two named editions of one game and refuses any other file by its SHA-256 before reading a byte of it, so a test cartridge reaches none of its code. On 2026-10-19 none of the 56 files under snes-roms/5 Tools & Service Test Carts/ matched either edition. Reading and rewriting a header in general belongs to snes-rom-image-python, the member this one consumes."
+}
