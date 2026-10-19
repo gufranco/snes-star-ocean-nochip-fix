@@ -80,6 +80,17 @@ refusal rather than as a file on somebody's disk.
 Weakening either end makes this unsafe to run unattended, which is the only
 reason it exists in this shape.
 
+## Test cartridges
+
+[`conformance/testroms.json`](conformance/testroms.json) lists none, and says
+why under `none`. Every image this tool touches is confirmed against the
+digests of one of its two editions before anything reads it, so a test
+cartridge is refused at the first step and exercises nothing here. On
+2026-10-19 none of the 56 files under `snes-roms/5 Tools & Service Test Carts/`
+matched either edition. There is no runner and no command. Header reading and
+rewriting, which a test cartridge can exercise, are the work of
+`snes-rom-image-python`, the submodule this member consumes.
+
 ## Every gate, in the order to run them
 
 ```bash
