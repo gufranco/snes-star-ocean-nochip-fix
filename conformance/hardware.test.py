@@ -147,7 +147,7 @@ class ConstantTest(unittest.TestCase):
         note = fact["note"]
 
         # Assert
-        self.assertIn("table stops at 32 megabit", note)
+        self.assertIn("table stops at 64 megabit", note)
 
 
 class ManifestTest(unittest.TestCase):

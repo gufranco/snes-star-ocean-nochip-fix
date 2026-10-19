@@ -84,8 +84,8 @@ would otherwise think had been broken.
 
 ### Everything about hardware.
 
-**What this project does.** Reads a file, rewrites thirty two bytes of it in
-every mirror, and writes it back.
+**What this project does.** Reads a file, rewrites six bytes in each of its two
+header mirrors, and writes it back.
 
 **Why.** It models no part and claims nothing about timing. Where a header sits
 is `snes-mapper`, what a header means and how its checksum is calculated is

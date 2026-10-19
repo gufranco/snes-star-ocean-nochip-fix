@@ -41,13 +41,13 @@
       "verified": true,
       "why": "What the header must declare for an image of that length.",
       "evidence": "Nintendo's rule, pinned in snes-rom-image-python: the size byte is the base two logarithm of the length in kilobytes, rounded up. 12288 KB gives 14.",
-      "note": "Nintendo's table stops at 32 megabit, so this figure comes from the rule rather than from a printed row. The rule reproduces every row the manual does print, and a table of five rows cannot be the whole answer because cartridges below its smallest row exist and carry a size byte.",
+      "note": "Nintendo's table stops at 64 megabit, so this figure comes from the rule rather than from a printed row. The rule reproduces every row the manual does print, and a table of five rows cannot be the whole answer because cartridges below its smallest row exist and carry a size byte.",
       "document": "developmentManual"
     }
   },
   "notStated": [
     "Anything about the S-DD1. This package corrects a header on an image somebody else already decompressed; it does not decompress anything. That chip is snes-sdd1-python.",
-    "Anything about hardware behaviour at all. This reads a file, rewrites thirty two bytes of it in every mirror, and writes it back.",
+    "Anything about hardware behaviour at all. This reads a file, rewrites six bytes in each of its two header mirrors, and writes it back.",
     "Whether the decompression that produced the input is correct. The input is taken as given and confirmed only to be the file the manifest names.",
     "Anything about timing."
   ]

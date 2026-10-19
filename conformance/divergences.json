@@ -21,11 +21,11 @@
       "parts": ["star-ocean"],
       "severity": "low",
       "status": "open",
-      "documentSays": "Nintendo tabulates five sizes, the largest of which is 32 megabit. Ninety six is not among them.",
+      "documentSays": "Nintendo tabulates five sizes, the largest of which is 64 megabit. Ninety six is not among them.",
       "referenceDoes": "n/a",
       "packageFollows": "document",
       "reasoning": "The figure comes from the manual's rule rather than from a printed row. The rule reproduces every row the manual does print, and a five row table cannot be the whole answer, because cartridges below its smallest row exist and carry a size byte. It is named here because a reader checking the table will not find this value in it.",
-      "wouldSettleIt": "A passage in Book I or Book II tabulating sizes past 32 megabit."
+      "wouldSettleIt": "A passage in Book I or Book II tabulating sizes past 64 megabit."
     },
     {
       "id": "nothing-here-models-hardware",
@@ -35,7 +35,7 @@
       "documentSays": "n/a",
       "referenceDoes": "n/a",
       "packageFollows": "neither",
-      "reasoning": "This reads a file, rewrites thirty two bytes of it in every mirror, and writes it back. It models no part, decompresses nothing, and claims nothing about timing. The sibling packages it calls make every claim there is.",
+      "reasoning": "This reads a file, rewrites six bytes in each of its two header mirrors, and writes it back. It models no part, decompresses nothing, and claims nothing about timing. The sibling packages it calls make every claim there is.",
       "wouldSettleIt": "n/a. This is a scope boundary rather than an unknown."
     }
   ]
