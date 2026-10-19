@@ -37,10 +37,10 @@ The example puts a file under the name of the Japanese retail cartridge with the
 
 ## Install
 
-| Requirement | Version |
-|:--|:--|
-| Python | 3.12 or newer |
-| git | Any, to fetch the submodule |
+| Requirement | Version                     |
+| :---------- | :-------------------------- |
+| Python      | 3.12 or newer               |
+| git         | Any, to fetch the submodule |
 
 ```bash
 git clone --recurse-submodules https://github.com/gufranco/snes-star-ocean-nochip-fix.git
@@ -71,11 +71,11 @@ python3 starocean/verify.py roms dist
 python3 starocean/fix.py roms dist
 ```
 
-| Command | Arguments | Does | Exit codes |
-|:--|:--|:--|:--|
-| `python3 starocean/verify.py` | `[source] [destination]`, default `roms` and `dist` | Looks for all four links of both chains, reports each, and writes nothing | 0 every file found matches, 1 a file found does not, 2 nothing from either chain is there |
-| `python3 starocean/fix.py` | `[source] [destination]`, default the source directory below and `dist` | Confirms each rebuild, corrects it, confirms the result, and writes it | 0 at least one image written and none refused, 1 an image was refused, 2 neither rebuild is there |
-| `python3 starocean/doctor.py` | none | Reports what is on this machine | 0 every check passes, 1 one does not |
+| Command                       | Arguments                                                               | Does                                                                      | Exit codes                                                                                        |
+| :---------------------------- | :---------------------------------------------------------------------- | :------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------ |
+| `python3 starocean/verify.py` | `[source] [destination]`, default `roms` and `dist`                     | Looks for all four links of both chains, reports each, and writes nothing | 0 every file found matches, 1 a file found does not, 2 nothing from either chain is there         |
+| `python3 starocean/fix.py`    | `[source] [destination]`, default the source directory below and `dist` | Confirms each rebuild, corrects it, confirms the result, and writes it    | 0 at least one image written and none refused, 1 an image was refused, 2 neither rebuild is there |
+| `python3 starocean/doctor.py` | none                                                                    | Reports what is on this machine                                           | 0 every check passes, 1 one does not                                                              |
 
 When `fix.py` gets no source argument, it reads from the directory `STAR_OCEAN_ROM_DIR` names. A named directory is used even when it is empty, with no fallback, so a mistyped path finds no image rather than an image somewhere else. Without the variable it takes the first directory that exists out of `roms` beside this checkout and [`roms/`](roms/) inside it. `verify.py` takes its directory only as an argument.
 
@@ -107,28 +107,28 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### Reading and correcting
 
-| Call | Does | Returns |
-|:--|:--|:--|
+| Call                                                  | Does                                                                                                                                                                                   | Returns             |
+| :---------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
 | `look(source=None, catalogue=None, destination=None)` | Looks for every link of every chain: `source`, `patch` and `reads` under `source`, `writes` under `destination`. Subdirectories are walked. Defaults are `roms`, `EDITIONS` and `dist` | A list of `Finding` |
-| `report(findings)` | One line per finding, with the first 16 hex digits of the sha256 found for an `altered` or `corrupt` file | A list of strings |
-| `verdict(findings)` | `WRONG` when any finding is `altered` or `corrupt`, else `SOUND` when any `matches`, else `NOTHING` | A string |
-| `confirm(image, edition)` | Checks the length, then the sha256, then the other three digests against `edition.before` | The `edition` |
-| `correct(image)` | Declares no coprocessor and the size the image has, in every header mirror, and recomputes the checksum. Checks nothing | The corrected bytes |
-| `apply(image, edition)` | `confirm`, `correct`, then the four digests of the result against `edition.after` | The corrected bytes |
-| `run(edition, source, destination)` | Reads `edition.reads` from `source`, applies it, and writes `edition.writes` under `destination`, making the directory | The path written |
-| `digests_of(data)` | crc32, md5, sha1 and sha256, as lowercase hex | A dict |
-| `directories(environment=None)` | The places `fix.py` looks: each entry of `STAR_OCEAN_ROM_DIR` split on the path separator, then `roms` beside the checkout, then `roms` inside it | A tuple of paths |
-| `source_directory(environment=None, places=None)` | `STAR_OCEAN_ROM_DIR` as given when it is set, else the first of `places` that is a directory, else `roms` inside the checkout | A path |
+| `report(findings)`                                    | One line per finding, with the first 16 hex digits of the sha256 found for an `altered` or `corrupt` file                                                                              | A list of strings   |
+| `verdict(findings)`                                   | `WRONG` when any finding is `altered` or `corrupt`, else `SOUND` when any `matches`, else `NOTHING`                                                                                    | A string            |
+| `confirm(image, edition)`                             | Checks the length, then the sha256, then the other three digests against `edition.before`                                                                                              | The `edition`       |
+| `correct(image)`                                      | Declares no coprocessor and the size the image has, in every header mirror, and recomputes the checksum. Checks nothing                                                                | The corrected bytes |
+| `apply(image, edition)`                               | `confirm`, `correct`, then the four digests of the result against `edition.after`                                                                                                      | The corrected bytes |
+| `run(edition, source, destination)`                   | Reads `edition.reads` from `source`, applies it, and writes `edition.writes` under `destination`, making the directory                                                                 | The path written    |
+| `digests_of(data)`                                    | crc32, md5, sha1 and sha256, as lowercase hex                                                                                                                                          | A dict              |
+| `directories(environment=None)`                       | The places `fix.py` looks: each entry of `STAR_OCEAN_ROM_DIR` split on the path separator, then `roms` beside the checkout, then `roms` inside it                                      | A tuple of paths    |
+| `source_directory(environment=None, places=None)`     | `STAR_OCEAN_ROM_DIR` as given when it is set, else the first of `places` that is a directory, else `roms` inside the checkout                                                          | A path              |
 
 `look`, `report`, `verdict`, `confirm`, `correct`, `apply` and `digests_of` write nothing. `run` is the only call that writes.
 
-| `Finding` attribute | Meaning |
-|:--|:--|
-| `edition` | The `Edition` the link belongs to |
-| `step` | The `Step` it is |
-| `path` | Where it was looked for or found |
-| `state` | `ABSENT`, `MATCHES`, `ALTERED` when the sha256 differs, or `CORRUPT` when the sha256 matches and another digest does not |
-| `found` | The four digests of the file, or `None` when it is absent |
+| `Finding` attribute | Meaning                                                                                                                  |
+| :------------------ | :----------------------------------------------------------------------------------------------------------------------- |
+| `edition`           | The `Edition` the link belongs to                                                                                        |
+| `step`              | The `Step` it is                                                                                                         |
+| `path`              | Where it was looked for or found                                                                                         |
+| `state`             | `ABSENT`, `MATCHES`, `ALTERED` when the sha256 differs, or `CORRUPT` when the sha256 matches and another digest does not |
+| `found`             | The four digests of the file, or `None` when it is absent                                                                |
 
 ```python
 import os
@@ -152,23 +152,23 @@ True
 
 ### Editions and their chains
 
-| Name | Content |
-|:--|:--|
-| `EDITIONS` | The two `Edition` records, `japanese` then `english`, loaded from [`editions.manifest.json`](editions.manifest.json) |
-| `named(name, among=None)` | The edition with that name. Raises `UnknownEdition` for any other |
-| `matching(digest, among=None)` | The edition whose input has that sha256, or `None` |
-| `load(path=None)`, `load_patch(path=None)` | The editions, or the `Patch`, read from a manifest, by default the one in this checkout |
-| `PATCH` | The `Patch` record: `name`, `version`, `author`, `where`, `note`, `archive` |
-| `EXPECTED_BYTES` | `0xC00000`, 12,582,912 bytes, the length of every input and output |
+| Name                                       | Content                                                                                                              |
+| :----------------------------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| `EDITIONS`                                 | The two `Edition` records, `japanese` then `english`, loaded from [`editions.manifest.json`](editions.manifest.json) |
+| `named(name, among=None)`                  | The edition with that name. Raises `UnknownEdition` for any other                                                    |
+| `matching(digest, among=None)`             | The edition whose input has that sha256, or `None`                                                                   |
+| `load(path=None)`, `load_patch(path=None)` | The editions, or the `Patch`, read from a manifest, by default the one in this checkout                              |
+| `PATCH`                                    | The `Patch` record: `name`, `version`, `author`, `where`, `note`, `archive`                                          |
+| `EXPECTED_BYTES`                           | `0xC00000`, 12,582,912 bytes, the length of every input and output                                                   |
 
-| `Edition` attribute | Meaning |
-|:--|:--|
-| `name`, `summary` | The edition's name and one sentence about it |
-| `reads`, `writes` | The file name the correction reads and the one it writes |
-| `size` | The length both of those must have |
-| `before`, `after` | The four digests of the input and of the output |
-| `source`, `patch` | The manifest entries for the retail cartridge and for neviksti's patch |
-| `chain()` | Four `Step` records, in order: `source`, `patch`, `reads`, `writes` |
+| `Edition` attribute | Meaning                                                                |
+| :------------------ | :--------------------------------------------------------------------- |
+| `name`, `summary`   | The edition's name and one sentence about it                           |
+| `reads`, `writes`   | The file name the correction reads and the one it writes               |
+| `size`              | The length both of those must have                                     |
+| `before`, `after`   | The four digests of the input and of the output                        |
+| `source`, `patch`   | The manifest entries for the retail cartridge and for neviksti's patch |
+| `chain()`           | Four `Step` records, in order: `source`, `patch`, `reads`, `writes`    |
 
 A `Step` carries `what`, `name`, `held` and `produced`, which is true only for `writes`. `step.bytes` is its pinned length and `step.digest(which=None)` returns one pinned digest, the sha256 by default.
 
@@ -201,11 +201,11 @@ The same patch on the DeJap English translation. The two are not interchangeable
 
 ### Digests
 
-| Name | Content |
-|:--|:--|
-| `DIGESTS` | `('crc32', 'md5', 'sha1', 'sha256')`, every digest a file is checked against |
-| `DECIDES` | `'sha256'`, the one that identifies a file. The other three are cross-checks |
-| `DIGEST_WIDTHS` | The hex length of each: 8, 32, 40 and 64 |
+| Name            | Content                                                                      |
+| :-------------- | :--------------------------------------------------------------------------- |
+| `DIGESTS`       | `('crc32', 'md5', 'sha1', 'sha256')`, every digest a file is checked against |
+| `DECIDES`       | `'sha256'`, the one that identifies a file. The other three are cross-checks |
+| `DIGEST_WIDTHS` | The hex length of each: 8, 32, 40 and 64                                     |
 
 ```python
 from starocean import DECIDES, DIGEST_WIDTHS, DIGESTS, digests_of, matching, named
@@ -232,14 +232,14 @@ None
 
 All six live in [`starocean/errors.py`](starocean/errors.py), and each is published at the package root.
 
-| Error | Raised by | When |
-|:--|:--|:--|
-| `Unrecognised` | `confirm`, `apply` | The file has the wrong length, or the right length and a different sha256 |
-| `Corrupt` | `confirm`, `apply` | The sha256 matches and another of the four digests does not, so the manifest contradicts itself |
-| `NotACartridge` | `correct`, `apply` | No cartridge header is found in the bytes |
-| `Unexpected` | `apply` | The input was the one named and the corrected result has a sha256 other than the one pinned |
-| `Missing` | `run` | The file the edition reads is not in the source directory |
-| `UnknownEdition` | `named` | No edition has that name |
+| Error            | Raised by          | When                                                                                            |
+| :--------------- | :----------------- | :---------------------------------------------------------------------------------------------- |
+| `Unrecognised`   | `confirm`, `apply` | The file has the wrong length, or the right length and a different sha256                       |
+| `Corrupt`        | `confirm`, `apply` | The sha256 matches and another of the four digests does not, so the manifest contradicts itself |
+| `NotACartridge`  | `correct`, `apply` | No cartridge header is found in the bytes                                                       |
+| `Unexpected`     | `apply`            | The input was the one named and the corrected result has a sha256 other than the one pinned     |
+| `Missing`        | `run`              | The file the edition reads is not in the source directory                                       |
+| `UnknownEdition` | `named`            | No edition has that name                                                                        |
 
 `fix.py` reports `Missing` as `not here` and goes on to the next edition. It reports the other four as `refused`, writes nothing for that edition, and exits 1.
 
@@ -298,18 +298,18 @@ Missing: Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc is not in nowhere
 
 ### Version and states
 
-| Name | Content |
-|:--|:--|
-| `VERSION`, `__version__` | The release this checkout is, written by the release job |
-| `ABSENT`, `MATCHES`, `ALTERED`, `CORRUPT` | The four states of a `Finding` |
-| `NOTHING`, `SOUND`, `WRONG` | The three answers of `verdict` |
+| Name                                      | Content                                                  |
+| :---------------------------------------- | :------------------------------------------------------- |
+| `VERSION`, `__version__`                  | The release this checkout is, written by the release job |
+| `ABSENT`, `MATCHES`, `ALTERED`, `CORRUPT` | The four states of a `Finding`                           |
+| `NOTHING`, `SOUND`, `WRONG`               | The three answers of `verdict`                           |
 
 ## Credit where it belongs
 
-| Who | What |
-|:--|:--|
-| **neviksti** | Reverse-engineered the S-DD1 and wrote the [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/), which decompresses the graphics ahead of time and rebuilds the cartridge at 96 Mbit, so the chip is not needed. Two patches, one for the Japanese original and one for the translated build |
-| **DeJap Translations** | The English translation the second patch is built on |
+| Who                    | What                                                                                                                                                                                                                                                                                                             |
+| :--------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **neviksti**           | Reverse-engineered the S-DD1 and wrote the [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/), which decompresses the graphics ahead of time and rebuilds the cartridge at 96 Mbit, so the chip is not needed. Two patches, one for the Japanese original and one for the translated build |
+| **DeJap Translations** | The English translation the second patch is built on                                                                                                                                                                                                                                                             |
 
 neviksti's stated purpose is real hardware: backup units such as the Game Doctor SF7, flash carts and custom boards have no S-DD1, so an unmodified Star Ocean does not run on them. Those are also the machines that read the header.
 
@@ -317,11 +317,11 @@ neviksti's stated purpose is real hardware: backup units such as the Game Doctor
 
 Star Ocean shipped on an S-DD1 board, and the chip decompressed graphics on the way to the console. After neviksti's patch the data is already decompressed. Both rebuilds still declare an S-DD1 in their header.
 
-| Field | Says | Should say |
-|:--|:--|:--|
-| Chipset | `0x45`, S-DD1 with save memory | `0x00`, no coprocessor |
-| Declared size | `0x0D`, 8 megabytes | `0x0E`, 16 megabytes, the first power of two that holds 12 |
-| Checksum and complement | Cover the old fields | Cover the new ones |
+| Field                   | Says                           | Should say                                                 |
+| :---------------------- | :----------------------------- | :--------------------------------------------------------- |
+| Chipset                 | `0x45`, S-DD1 with save memory | `0x00`, no coprocessor                                     |
+| Declared size           | `0x0D`, 8 megabytes            | `0x0E`, 16 megabytes, the first power of two that holds 12 |
+| Checksum and complement | Cover the old fields           | Cover the new ones                                         |
 
 The size field holds a power of two, and 12 megabytes is not one, so the rebuilds inherited a declaration that never matched their length.
 
@@ -343,10 +343,10 @@ A file other than the one named is refused before the rewrite touches it. A rewr
 
 ## The two editions
 
-| Edition | Starts from | Patch | Writes |
-|:--|:--|:--|:--|
-| `japanese` | `Star Ocean (Japan).sfc` | `96Mbit_SO_JPN.xdelta` | `star-ocean-jp-nochip.sfc` |
-| `english` | `Star Ocean (J) T+Eng v1.0 DeJap.sfc`, the same cartridge with DeJap's translation applied | `96Mbit_SO_ENG.xdelta` | `star-ocean-en-nochip.sfc` |
+| Edition    | Starts from                                                                                | Patch                  | Writes                     |
+| :--------- | :----------------------------------------------------------------------------------------- | :--------------------- | :------------------------- |
+| `japanese` | `Star Ocean (Japan).sfc`                                                                   | `96Mbit_SO_JPN.xdelta` | `star-ocean-jp-nochip.sfc` |
+| `english`  | `Star Ocean (J) T+Eng v1.0 DeJap.sfc`, the same cartridge with DeJap's translation applied | `96Mbit_SO_ENG.xdelta` | `star-ocean-en-nochip.sfc` |
 
 The two patches are not interchangeable. For the English chain, apply DeJap's translation first and the 96 Mbit patch second, as neviksti specifies.
 
@@ -374,12 +374,12 @@ A rewritten header and a corrupted one are both files of exactly the right lengt
 
 Six bytes in each of the two header mirrors, at `0x7FC0` and `0xA07FC0`:
 
-| Offset in the mirror | Field | Before | After |
-|:--|:--|:--|:--|
-| `0x16` | Chipset | `0x45` | `0x00` |
-| `0x17` | Declared size | `0x0D` | `0x0E` |
-| `0x1C`, `0x1D` | Checksum complement | Old | Recomputed |
-| `0x1E`, `0x1F` | Checksum | Old | Recomputed |
+| Offset in the mirror | Field               | Before | After      |
+| :------------------- | :------------------ | :----- | :--------- |
+| `0x16`               | Chipset             | `0x45` | `0x00`     |
+| `0x17`               | Declared size       | `0x0D` | `0x0E`     |
+| `0x1C`, `0x1D`       | Checksum complement | Old    | Recomputed |
+| `0x1E`, `0x1F`       | Checksum            | Old    | Recomputed |
 
 A test asserts that every byte that moves lies inside a header mirror, and a second correction of a corrected image changes nothing.
 
@@ -411,13 +411,13 @@ With the rebuilds in [`roms/`](roms/), this checks every pinned digest of the in
 
 ## Working on it
 
-| Need | Where |
-|:--|:--|
-| Every gate and the order to run them | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| The same material for a coding agent | [AGENTS.md](AGENTS.md) |
-| The standard this repository shares with the rest of the family | [FAMILY.md](FAMILY.md) |
-| Bug reports | [GitHub Issues](https://github.com/gufranco/snes-star-ocean-nochip-fix/issues) |
-| Security reports | [SECURITY.md](SECURITY.md) |
+| Need                                                            | Where                                                                          |
+| :-------------------------------------------------------------- | :----------------------------------------------------------------------------- |
+| Every gate and the order to run them                            | [CONTRIBUTING.md](CONTRIBUTING.md)                                             |
+| The same material for a coding agent                            | [AGENTS.md](AGENTS.md)                                                         |
+| The standard this repository shares with the rest of the family | [FAMILY.md](FAMILY.md)                                                         |
+| Bug reports                                                     | [GitHub Issues](https://github.com/gufranco/snes-star-ocean-nochip-fix/issues) |
+| Security reports                                                | [SECURITY.md](SECURITY.md)                                                     |
 
 ```bash
 uvx ruff@0.16.3 format --check .
@@ -437,15 +437,15 @@ A weekly job reports when the pinned submodule falls behind its upstream. Moving
 
 ## References
 
-| Package | Does |
-|:--|:--|
+| Package                                                               | Does                                                                    |
+| :-------------------------------------------------------------------- | :---------------------------------------------------------------------- |
 | [`snes-rom-image`](https://github.com/gufranco/snes-rom-image-python) | Finds every header mirror, rewrites the fields, recomputes the checksum |
-| [`snes-mapper`](https://github.com/gufranco/snes-mapper-python) | Decides where a header is, out of the places one can be |
+| [`snes-mapper`](https://github.com/gufranco/snes-mapper-python)       | Decides where a header is, out of the places one can be                 |
 
 - [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/), neviksti, on Romhacking.net
 - [S-DD1](https://wiki.superfamicom.org/s-dd1), Super Famicom Development Wiki
 - [SNES: Star Ocean English translation/hack](https://github.com/frederic-mahe/Hardware-Target-Game-Database/issues/622), Hardware Target Game Database
-- *SNES Development Manual, Book I*, Nintendo of America Inc. 21,022,582 bytes, SHA-256 `f1405241000046abba7849376d2ec53cf85f1ad2e9950d69a7c2cf1f3ff6b791`. It is not redistributable and is not in this repository. [`conformance/documents.json`](conformance/documents.json) carries its identity, and `python3 -m conformance.documents` downloads it from https://archive.org/download/SNESDevManual/book1_text.pdf into `docs/`, which git ignores, and refuses any other file. `python3 -m conformance.documents --check` verifies a copy already there.
+- _SNES Development Manual, Book I_, Nintendo of America Inc. 21,022,582 bytes, SHA-256 `f1405241000046abba7849376d2ec53cf85f1ad2e9950d69a7c2cf1f3ff6b791`. It is not redistributable and is not in this repository. [`conformance/documents.json`](conformance/documents.json) carries its identity, and `python3 -m conformance.documents` downloads it from https://archive.org/download/SNESDevManual/book1_text.pdf into `docs/`, which git ignores, and refuses any other file. `python3 -m conformance.documents --check` verifies a copy already there.
 
 ## Citing this
 

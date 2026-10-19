@@ -72,9 +72,9 @@ printed row, and two are boundaries listed so nobody mistakes them for gaps.
 
 ## The order matters, and it is the whole design
 
-An image is confirmed against four digests *before* the rewrite, so a file that
+An image is confirmed against four digests _before_ the rewrite, so a file that
 is not the one named never reaches it. The result is confirmed against four more
-*before* it is written, so a rewrite that produced something unforeseen ends as a
+_before_ it is written, so a rewrite that produced something unforeseen ends as a
 refusal rather than as a file on somebody's disk.
 
 Weakening either end makes this unsafe to run unattended, which is the only
@@ -165,11 +165,11 @@ So the domain comes first, and it comes from the code.
 
 4. **Choose per calculation, and record which case it is.**
 
-   | case | what to build |
-   |---|---|
-   | the exhaustive table fits | build it. No miss is possible, and the fallback behind it becomes unreachable rather than merely unlikely |
-   | it does not fit, but the arithmetic is readable | read the arithmetic. A routine covers the whole domain and costs no space |
-   | neither | a recorded-set table, and say plainly that it covers the recording and what the holdout rate is |
+   | case                                            | what to build                                                                                             |
+   | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+   | the exhaustive table fits                       | build it. No miss is possible, and the fallback behind it becomes unreachable rather than merely unlikely |
+   | it does not fit, but the arithmetic is readable | read the arithmetic. A routine covers the whole domain and costs no space                                 |
+   | neither                                         | a recorded-set table, and say plainly that it covers the recording and what the holdout rate is           |
 
 5. **Publish the holdout for every calculation in the third case.** Build the
    table from part of the recordings and ask it the rest. A coverage figure with
@@ -236,6 +236,7 @@ routine is written for speed first:
 A routine that is correct and slow is not finished. Where a faster form was
 rejected, the reason is written down beside the slower one, because the next
 reader will otherwise assume nobody thought of it.
+
 ## Every gate, in the order to run them
 
 ```bash
@@ -275,19 +276,19 @@ module of the same name.
 
 ## Conventions that are not negotiable
 
-| Thing | Rule |
-|:------|:-----|
-| Language | Python only |
-| Comments | None in source, and a docstring counts as one |
-| Test layout | `<module>.test.py` beside the module it covers |
-| Test structure | Arrange, act, assert, each opened by its bare marker |
-| Package manager for tooling | pnpm, never npm |
-| Commits | Conventional Commits |
-| Coverage | 100% statements and branches, enforced |
-| Types | `mypy` at strict, plus every optional error class |
-| Images | Never committed, in any form, for any reason. A digest is published; a byte of content is not |
-| Header knowledge | Belongs in the siblings. Adding a copy here creates a second source of truth |
-| The dependency | A submodule pinned by commit, never a copied file. See [FAMILY.md](FAMILY.md) |
+| Thing                       | Rule                                                                                          |
+| :-------------------------- | :-------------------------------------------------------------------------------------------- |
+| Language                    | Python only                                                                                   |
+| Comments                    | None in source, and a docstring counts as one                                                 |
+| Test layout                 | `<module>.test.py` beside the module it covers                                                |
+| Test structure              | Arrange, act, assert, each opened by its bare marker                                          |
+| Package manager for tooling | pnpm, never npm                                                                               |
+| Commits                     | Conventional Commits                                                                          |
+| Coverage                    | 100% statements and branches, enforced                                                        |
+| Types                       | `mypy` at strict, plus every optional error class                                             |
+| Images                      | Never committed, in any form, for any reason. A digest is published; a byte of content is not |
+| Header knowledge            | Belongs in the siblings. Adding a copy here creates a second source of truth                  |
+| The dependency              | A submodule pinned by commit, never a copied file. See [FAMILY.md](FAMILY.md)                 |
 
 The settings in [`pyproject.toml`](pyproject.toml) carry no comments, so their
 reasons live here:
@@ -337,6 +338,20 @@ reasons live here:
   `^def listing\(` in the coverage exclusions: this part only existed inside one
   machine, so the family sweep for machine names is skipped here.
 
+The formatter's ignores in [`.prettierignore`](.prettierignore) carry no
+comments either, so their reasons live here:
+
+- `pnpm-lock.yaml` and `package-lock.json`: the package manager writes them, in
+  its own layout, on every install.
+- `node_modules/`, `.venv/`, `venv/`, `build/`, `dist/` and `*.egg-info/`:
+  installed or built, never written by hand.
+- `.coverage`, `coverage.json`, `htmlcov/` and the tool caches: the output of a
+  run, never committed.
+- `docs/`, `specs/`, `.work/` and `.claude/`: local working material, never
+  committed.
+- `snes-rom-image-python/`: a submodule. It is a member that formats and checks
+  itself, and the commit pinned here is not this repository's to change.
+
 ## Layout
 
 ```
@@ -384,7 +399,7 @@ being made in one of them and forgotten in the others, because a test in this
 repository cannot see the others, so the check is a command rather than a suite:
 
 ```sh
-shared() { sed '/^\*Everything above this line/q' "$1"; }
+shared() { sed '/^_Everything above this line/q' "$1"; }
 
 grep -o 'github\.com/[^/]*/\([a-z0-9-]*\))' FAMILY.md | sed 's|.*/||; s|)||' | sort -u |
 while read -r member; do
@@ -414,4 +429,3 @@ words.
 A gate that would have caught the bug. A change that alters what this writes also
 updates the manifest, records the digests it replaces under `supersedes` with the
 upstream commit and the reason, and never the other way round.
-

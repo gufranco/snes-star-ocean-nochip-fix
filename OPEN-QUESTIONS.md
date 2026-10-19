@@ -43,7 +43,7 @@ at all.
 **The document says.** Nintendo tabulates five sizes, the largest of which is 64
 megabit. Ninety six is not among them.
 
-Source: Nintendo, *SNES Development Manual, Book 1*, manual page 1-2-18, read on
+Source: Nintendo, _SNES Development Manual, Book 1_, manual page 1-2-18, read on
 2026-08-27 from a rendered page. The five rows pair a code with a range: `09H` is
 `3 ~ 4M Bit`, `0AH` is `5 ~ 8M Bit`, `0BH` is `9 ~ 16M Bit`, `0CH` is `17 ~ 32M
 Bit`, and `0DH` is `33 ~ 64M Bit`. This entry used to say the largest was 32

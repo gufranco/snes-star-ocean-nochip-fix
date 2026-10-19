@@ -37,10 +37,10 @@ wrong
 
 ## インストール
 
-| 要件 | バージョン |
-|:--|:--|
-| Python | 3.12以降 |
-| git | 任意。サブモジュールの取得に使います |
+| 要件   | バージョン                           |
+| :----- | :----------------------------------- |
+| Python | 3.12以降                             |
+| git    | 任意。サブモジュールの取得に使います |
 
 ```bash
 git clone --recurse-submodules https://github.com/gufranco/snes-star-ocean-nochip-fix.git
@@ -71,11 +71,11 @@ python3 starocean/verify.py roms dist
 python3 starocean/fix.py roms dist
 ```
 
-| コマンド | 引数 | 動作 | 終了コード |
-|:--|:--|:--|:--|
-| `python3 starocean/verify.py` | `[source] [destination]`、デフォルトは`roms`と`dist` | 両チェーンの4つのリンクをすべて探し、それぞれを報告し、何も書き込みません | 0は見つかったすべてのファイルが一致、1は見つかったファイルが一致しない、2はどちらのチェーンのファイルも存在しない |
-| `python3 starocean/fix.py` | `[source] [destination]`、デフォルトは後述のソースディレクトリと`dist` | 各リビルドを確認し、修正し、結果を確認して書き込みます | 0は少なくとも1つのイメージを書き込み拒否なし、1はイメージが拒否された、2はどちらのリビルドも存在しない |
-| `python3 starocean/doctor.py` | なし | このマシンの状態を報告します | 0はすべてのチェックに合格、1は1つが不合格 |
+| コマンド                      | 引数                                                                   | 動作                                                                      | 終了コード                                                                                                        |
+| :---------------------------- | :--------------------------------------------------------------------- | :------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------- |
+| `python3 starocean/verify.py` | `[source] [destination]`、デフォルトは`roms`と`dist`                   | 両チェーンの4つのリンクをすべて探し、それぞれを報告し、何も書き込みません | 0は見つかったすべてのファイルが一致、1は見つかったファイルが一致しない、2はどちらのチェーンのファイルも存在しない |
+| `python3 starocean/fix.py`    | `[source] [destination]`、デフォルトは後述のソースディレクトリと`dist` | 各リビルドを確認し、修正し、結果を確認して書き込みます                    | 0は少なくとも1つのイメージを書き込み拒否なし、1はイメージが拒否された、2はどちらのリビルドも存在しない            |
+| `python3 starocean/doctor.py` | なし                                                                   | このマシンの状態を報告します                                              | 0はすべてのチェックに合格、1は1つが不合格                                                                         |
 
 `fix.py`にソース引数が渡されない場合は、`STAR_OCEAN_ROM_DIR`が指すディレクトリから読み込みます。指定されたディレクトリは空であっても他に切り替えずに使われるため、パスを打ち間違えると、別の場所のイメージではなく、イメージが見つからないという結果になります。この変数がない場合は、このチェックアウトの隣にある`roms`と、その中の[`roms/`](roms/)のうち、最初に存在するディレクトリを使います。`verify.py`はディレクトリを引数としてのみ受け取ります。
 
@@ -107,28 +107,28 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### 読み取りと修正
 
-| 呼び出し | 動作 | 戻り値 |
-|:--|:--|:--|
-| `look(source=None, catalogue=None, destination=None)` | すべてのチェーンのすべてのリンクを探します。`source`、`patch`、`reads`は`source`の下、`writes`は`destination`の下です。サブディレクトリも走査します。デフォルトは`roms`、`EDITIONS`、`dist`です | `Finding`のリスト |
-| `report(findings)` | 結果ごとに1行です。`altered`または`corrupt`のファイルには、見つかったsha256の先頭16桁の16進数を付けます | 文字列のリスト |
-| `verdict(findings)` | いずれかの結果が`altered`または`corrupt`なら`WRONG`、そうでなくいずれかが`matches`なら`SOUND`、それ以外は`NOTHING` | 文字列 |
-| `confirm(image, edition)` | 長さ、次にsha256、次に残り3つのダイジェストを`edition.before`と照合します | `edition` |
-| `correct(image)` | すべてのヘッダーミラーで、コプロセッサなしとイメージの実際のサイズを宣言し、チェックサムを再計算します。何も検証しません | 修正済みのバイト列 |
-| `apply(image, edition)` | `confirm`、`correct`を行い、結果の4つのダイジェストを`edition.after`と照合します | 修正済みのバイト列 |
-| `run(edition, source, destination)` | `source`から`edition.reads`を読み込んで適用し、`destination`の下に`edition.writes`を書き込みます。ディレクトリは作成します | 書き込んだパス |
-| `digests_of(data)` | crc32、md5、sha1、sha256を小文字の16進数で返します | dict |
-| `directories(environment=None)` | `fix.py`が探す場所です。パス区切り文字で分割した`STAR_OCEAN_ROM_DIR`の各エントリ、次にチェックアウトの隣の`roms`、次にその中の`roms`です | パスのタプル |
-| `source_directory(environment=None, places=None)` | 設定されていれば`STAR_OCEAN_ROM_DIR`をそのまま、そうでなければ`places`のうち最初のディレクトリ、それもなければチェックアウト内の`roms` | パス |
+| 呼び出し                                              | 動作                                                                                                                                                                                            | 戻り値             |
+| :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| `look(source=None, catalogue=None, destination=None)` | すべてのチェーンのすべてのリンクを探します。`source`、`patch`、`reads`は`source`の下、`writes`は`destination`の下です。サブディレクトリも走査します。デフォルトは`roms`、`EDITIONS`、`dist`です | `Finding`のリスト  |
+| `report(findings)`                                    | 結果ごとに1行です。`altered`または`corrupt`のファイルには、見つかったsha256の先頭16桁の16進数を付けます                                                                                         | 文字列のリスト     |
+| `verdict(findings)`                                   | いずれかの結果が`altered`または`corrupt`なら`WRONG`、そうでなくいずれかが`matches`なら`SOUND`、それ以外は`NOTHING`                                                                              | 文字列             |
+| `confirm(image, edition)`                             | 長さ、次にsha256、次に残り3つのダイジェストを`edition.before`と照合します                                                                                                                       | `edition`          |
+| `correct(image)`                                      | すべてのヘッダーミラーで、コプロセッサなしとイメージの実際のサイズを宣言し、チェックサムを再計算します。何も検証しません                                                                        | 修正済みのバイト列 |
+| `apply(image, edition)`                               | `confirm`、`correct`を行い、結果の4つのダイジェストを`edition.after`と照合します                                                                                                                | 修正済みのバイト列 |
+| `run(edition, source, destination)`                   | `source`から`edition.reads`を読み込んで適用し、`destination`の下に`edition.writes`を書き込みます。ディレクトリは作成します                                                                      | 書き込んだパス     |
+| `digests_of(data)`                                    | crc32、md5、sha1、sha256を小文字の16進数で返します                                                                                                                                              | dict               |
+| `directories(environment=None)`                       | `fix.py`が探す場所です。パス区切り文字で分割した`STAR_OCEAN_ROM_DIR`の各エントリ、次にチェックアウトの隣の`roms`、次にその中の`roms`です                                                        | パスのタプル       |
+| `source_directory(environment=None, places=None)`     | 設定されていれば`STAR_OCEAN_ROM_DIR`をそのまま、そうでなければ`places`のうち最初のディレクトリ、それもなければチェックアウト内の`roms`                                                          | パス               |
 
 `look`、`report`、`verdict`、`confirm`、`correct`、`apply`、`digests_of`は何も書き込みません。書き込みを行うのは`run`だけです。
 
-| `Finding`の属性 | 意味 |
-|:--|:--|
-| `edition` | リンクが属する`Edition` |
-| `step` | リンクに対応する`Step` |
-| `path` | 探した場所、または見つかった場所 |
-| `state` | `ABSENT`、`MATCHES`、sha256が異なる場合の`ALTERED`、またはsha256が一致して別のダイジェストが一致しない場合の`CORRUPT` |
-| `found` | ファイルの4つのダイジェスト。存在しない場合は`None` |
+| `Finding`の属性 | 意味                                                                                                                  |
+| :-------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| `edition`       | リンクが属する`Edition`                                                                                               |
+| `step`          | リンクに対応する`Step`                                                                                                |
+| `path`          | 探した場所、または見つかった場所                                                                                      |
+| `state`         | `ABSENT`、`MATCHES`、sha256が異なる場合の`ALTERED`、またはsha256が一致して別のダイジェストが一致しない場合の`CORRUPT` |
+| `found`         | ファイルの4つのダイジェスト。存在しない場合は`None`                                                                   |
 
 ```python
 import os
@@ -152,23 +152,23 @@ True
 
 ### エディションとそのチェーン
 
-| 名前 | 内容 |
-|:--|:--|
-| `EDITIONS` | [`editions.manifest.json`](editions.manifest.json)から読み込んだ2つの`Edition`レコード。`japanese`、次に`english` |
-| `named(name, among=None)` | その名前のエディション。それ以外の名前では`UnknownEdition`を送出します |
-| `matching(digest, among=None)` | 入力がそのsha256を持つエディション、または`None` |
-| `load(path=None)`、`load_patch(path=None)` | マニフェストから読み込んだエディション、または`Patch`。デフォルトはこのチェックアウト内のマニフェスト |
-| `PATCH` | `Patch`レコード：`name`、`version`、`author`、`where`、`note`、`archive` |
-| `EXPECTED_BYTES` | `0xC00000`、12,582,912バイト。すべての入力と出力の長さ |
+| 名前                                       | 内容                                                                                                              |
+| :----------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
+| `EDITIONS`                                 | [`editions.manifest.json`](editions.manifest.json)から読み込んだ2つの`Edition`レコード。`japanese`、次に`english` |
+| `named(name, among=None)`                  | その名前のエディション。それ以外の名前では`UnknownEdition`を送出します                                            |
+| `matching(digest, among=None)`             | 入力がそのsha256を持つエディション、または`None`                                                                  |
+| `load(path=None)`、`load_patch(path=None)` | マニフェストから読み込んだエディション、または`Patch`。デフォルトはこのチェックアウト内のマニフェスト             |
+| `PATCH`                                    | `Patch`レコード：`name`、`version`、`author`、`where`、`note`、`archive`                                          |
+| `EXPECTED_BYTES`                           | `0xC00000`、12,582,912バイト。すべての入力と出力の長さ                                                            |
 
-| `Edition`の属性 | 意味 |
-|:--|:--|
-| `name`、`summary` | エディションの名前と、それについての1文 |
-| `reads`、`writes` | 修正が読み込むファイル名と書き込むファイル名 |
-| `size` | その両方が持つべき長さ |
-| `before`、`after` | 入力と出力それぞれの4つのダイジェスト |
-| `source`、`patch` | 市販カートリッジとnevikstiのパッチのマニフェストエントリ |
-| `chain()` | 順に`source`、`patch`、`reads`、`writes`の4つの`Step`レコード |
+| `Edition`の属性   | 意味                                                          |
+| :---------------- | :------------------------------------------------------------ |
+| `name`、`summary` | エディションの名前と、それについての1文                       |
+| `reads`、`writes` | 修正が読み込むファイル名と書き込むファイル名                  |
+| `size`            | その両方が持つべき長さ                                        |
+| `before`、`after` | 入力と出力それぞれの4つのダイジェスト                         |
+| `source`、`patch` | 市販カートリッジとnevikstiのパッチのマニフェストエントリ      |
+| `chain()`         | 順に`source`、`patch`、`reads`、`writes`の4つの`Step`レコード |
 
 `Step`は`what`、`name`、`held`、`produced`を持ち、`produced`は`writes`の場合にのみtrueです。`step.bytes`は固定された長さで、`step.digest(which=None)`は固定されたダイジェストを1つ返します。デフォルトはsha256です。
 
@@ -201,11 +201,11 @@ The same patch on the DeJap English translation. The two are not interchangeable
 
 ### ダイジェスト
 
-| 名前 | 内容 |
-|:--|:--|
-| `DIGESTS` | `('crc32', 'md5', 'sha1', 'sha256')`。ファイルを照合するすべてのダイジェスト |
-| `DECIDES` | `'sha256'`。ファイルを識別するダイジェストです。残り3つはクロスチェックです |
-| `DIGEST_WIDTHS` | それぞれの16進数の長さ：8、32、40、64 |
+| 名前            | 内容                                                                         |
+| :-------------- | :--------------------------------------------------------------------------- |
+| `DIGESTS`       | `('crc32', 'md5', 'sha1', 'sha256')`。ファイルを照合するすべてのダイジェスト |
+| `DECIDES`       | `'sha256'`。ファイルを識別するダイジェストです。残り3つはクロスチェックです  |
+| `DIGEST_WIDTHS` | それぞれの16進数の長さ：8、32、40、64                                        |
 
 ```python
 from starocean import DECIDES, DIGEST_WIDTHS, DIGESTS, digests_of, matching, named
@@ -232,14 +232,14 @@ None
 
 6つすべてが[`starocean/errors.py`](starocean/errors.py)にあり、それぞれパッケージのルートで公開されています。
 
-| エラー | 送出元 | 条件 |
-|:--|:--|:--|
-| `Unrecognised` | `confirm`、`apply` | ファイルの長さが誤っている、または長さは正しいがsha256が異なる |
-| `Corrupt` | `confirm`、`apply` | sha256は一致するが4つのダイジェストのうち別のものが一致せず、マニフェストが自己矛盾している |
-| `NotACartridge` | `correct`、`apply` | バイト列の中にカートリッジヘッダーが見つからない |
-| `Unexpected` | `apply` | 入力は指定されたものだったが、修正結果のsha256が固定値と異なる |
-| `Missing` | `run` | エディションが読み込むファイルがソースディレクトリにない |
-| `UnknownEdition` | `named` | その名前のエディションがない |
+| エラー           | 送出元             | 条件                                                                                        |
+| :--------------- | :----------------- | :------------------------------------------------------------------------------------------ |
+| `Unrecognised`   | `confirm`、`apply` | ファイルの長さが誤っている、または長さは正しいがsha256が異なる                              |
+| `Corrupt`        | `confirm`、`apply` | sha256は一致するが4つのダイジェストのうち別のものが一致せず、マニフェストが自己矛盾している |
+| `NotACartridge`  | `correct`、`apply` | バイト列の中にカートリッジヘッダーが見つからない                                            |
+| `Unexpected`     | `apply`            | 入力は指定されたものだったが、修正結果のsha256が固定値と異なる                              |
+| `Missing`        | `run`              | エディションが読み込むファイルがソースディレクトリにない                                    |
+| `UnknownEdition` | `named`            | その名前のエディションがない                                                                |
 
 `fix.py`は`Missing`を`not here`として報告し、次のエディションに進みます。残りの4つは`refused`として報告し、そのエディションについては何も書き込まず、1で終了します。
 
@@ -298,18 +298,18 @@ Missing: Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc is not in nowhere
 
 ### バージョンと状態
 
-| 名前 | 内容 |
-|:--|:--|
-| `VERSION`、`__version__` | このチェックアウトのリリース。リリースジョブが書き込みます |
-| `ABSENT`、`MATCHES`、`ALTERED`、`CORRUPT` | `Finding`の4つの状態 |
-| `NOTHING`、`SOUND`、`WRONG` | `verdict`の3つの答え |
+| 名前                                      | 内容                                                       |
+| :---------------------------------------- | :--------------------------------------------------------- |
+| `VERSION`、`__version__`                  | このチェックアウトのリリース。リリースジョブが書き込みます |
+| `ABSENT`、`MATCHES`、`ALTERED`、`CORRUPT` | `Finding`の4つの状態                                       |
+| `NOTHING`、`SOUND`、`WRONG`               | `verdict`の3つの答え                                       |
 
 ## クレジット
 
-| 誰が | 何を |
-|:--|:--|
-| **neviksti** | S-DD1をリバースエンジニアリングし、[Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/)を作成しました。グラフィックスを事前に展開し、カートリッジを96 Mbitで再構築するため、チップが不要になります。日本語オリジナル用と翻訳版用の2つのパッチがあります |
-| **DeJap Translations** | 2つ目のパッチのベースとなる英語翻訳 |
+| 誰が                   | 何を                                                                                                                                                                                                                                                                        |
+| :--------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **neviksti**           | S-DD1をリバースエンジニアリングし、[Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/)を作成しました。グラフィックスを事前に展開し、カートリッジを96 Mbitで再構築するため、チップが不要になります。日本語オリジナル用と翻訳版用の2つのパッチがあります |
+| **DeJap Translations** | 2つ目のパッチのベースとなる英語翻訳                                                                                                                                                                                                                                         |
 
 nevikstiが掲げる目的は実機です。Game Doctor SF7などのバックアップユニット、フラッシュカート、カスタム基板にはS-DD1がないため、無改造のStar Oceanはそれらの上では動作しません。ヘッダーを読むのも、これらのマシンです。
 
@@ -317,11 +317,11 @@ nevikstiが掲げる目的は実機です。Game Doctor SF7などのバックア
 
 Star OceanはS-DD1基板で発売され、このチップがコンソールへ渡る途中でグラフィックスを展開していました。nevikstiのパッチ適用後、データはすでに展開されています。それでも両方のリビルドは、ヘッダーでS-DD1を宣言したままです。
 
-| フィールド | 現在の値 | 正しい値 |
-|:--|:--|:--|
-| Chipset | `0x45`、セーブメモリ付きS-DD1 | `0x00`、コプロセッサなし |
-| 宣言サイズ | `0x0D`、8メガバイト | `0x0E`、16メガバイト。12を収める最初の2のべき乗 |
-| チェックサムと補数 | 古いフィールドが対象 | 新しいフィールドが対象 |
+| フィールド         | 現在の値                      | 正しい値                                        |
+| :----------------- | :---------------------------- | :---------------------------------------------- |
+| Chipset            | `0x45`、セーブメモリ付きS-DD1 | `0x00`、コプロセッサなし                        |
+| 宣言サイズ         | `0x0D`、8メガバイト           | `0x0E`、16メガバイト。12を収める最初の2のべき乗 |
+| チェックサムと補数 | 古いフィールドが対象          | 新しいフィールドが対象                          |
 
 サイズフィールドは2のべき乗を保持しますが、12メガバイトは2のべき乗ではありません。そのためリビルドは、自身の長さと一度も一致したことのない宣言を受け継いでいました。
 
@@ -343,10 +343,10 @@ graph LR
 
 ## 2つのエディション
 
-| エディション | 元ファイル | パッチ | 書き込み先 |
-|:--|:--|:--|:--|
-| `japanese` | `Star Ocean (Japan).sfc` | `96Mbit_SO_JPN.xdelta` | `star-ocean-jp-nochip.sfc` |
-| `english` | `Star Ocean (J) T+Eng v1.0 DeJap.sfc`、同じカートリッジにDeJapの翻訳を適用したもの | `96Mbit_SO_ENG.xdelta` | `star-ocean-en-nochip.sfc` |
+| エディション | 元ファイル                                                                         | パッチ                 | 書き込み先                 |
+| :----------- | :--------------------------------------------------------------------------------- | :--------------------- | :------------------------- |
+| `japanese`   | `Star Ocean (Japan).sfc`                                                           | `96Mbit_SO_JPN.xdelta` | `star-ocean-jp-nochip.sfc` |
+| `english`    | `Star Ocean (J) T+Eng v1.0 DeJap.sfc`、同じカートリッジにDeJapの翻訳を適用したもの | `96Mbit_SO_ENG.xdelta` | `star-ocean-en-nochip.sfc` |
 
 2つのパッチに互換性はありません。英語版チェーンでは、nevikstiの指定どおり、先にDeJapの翻訳を、次に96 Mbitパッチを適用してください。
 
@@ -374,12 +374,12 @@ graph LR
 
 2つのヘッダーミラーそれぞれの6バイトで、場所は`0x7FC0`と`0xA07FC0`です。
 
-| ミラー内のオフセット | フィールド | 変更前 | 変更後 |
-|:--|:--|:--|:--|
-| `0x16` | Chipset | `0x45` | `0x00` |
-| `0x17` | 宣言サイズ | `0x0D` | `0x0E` |
-| `0x1C`、`0x1D` | チェックサム補数 | 旧値 | 再計算 |
-| `0x1E`、`0x1F` | チェックサム | 旧値 | 再計算 |
+| ミラー内のオフセット | フィールド       | 変更前 | 変更後 |
+| :------------------- | :--------------- | :----- | :----- |
+| `0x16`               | Chipset          | `0x45` | `0x00` |
+| `0x17`               | 宣言サイズ       | `0x0D` | `0x0E` |
+| `0x1C`、`0x1D`       | チェックサム補数 | 旧値   | 再計算 |
+| `0x1E`、`0x1F`       | チェックサム     | 旧値   | 再計算 |
 
 変化するすべてのバイトがヘッダーミラーの内側にあることと、修正済みイメージを再度修正しても何も変わらないことを、テストで検証しています。
 
@@ -411,13 +411,13 @@ python3 conformance/against_images.test.py
 
 ## 開発
 
-| 必要なもの | 場所 |
-|:--|:--|
-| すべてのゲートと実行順序 | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| コーディングエージェント向けの同じ内容 | [AGENTS.md](AGENTS.md) |
-| このリポジトリがファミリーの他のリポジトリと共有する標準 | [FAMILY.md](FAMILY.md) |
-| バグ報告 | [GitHub Issues](https://github.com/gufranco/snes-star-ocean-nochip-fix/issues) |
-| セキュリティ報告 | [SECURITY.md](SECURITY.md) |
+| 必要なもの                                               | 場所                                                                           |
+| :------------------------------------------------------- | :----------------------------------------------------------------------------- |
+| すべてのゲートと実行順序                                 | [CONTRIBUTING.md](CONTRIBUTING.md)                                             |
+| コーディングエージェント向けの同じ内容                   | [AGENTS.md](AGENTS.md)                                                         |
+| このリポジトリがファミリーの他のリポジトリと共有する標準 | [FAMILY.md](FAMILY.md)                                                         |
+| バグ報告                                                 | [GitHub Issues](https://github.com/gufranco/snes-star-ocean-nochip-fix/issues) |
+| セキュリティ報告                                         | [SECURITY.md](SECURITY.md)                                                     |
 
 ```bash
 uvx ruff@0.16.3 format --check .
@@ -437,15 +437,15 @@ python3 -m conformance.speed
 
 ## 参考資料
 
-| パッケージ | 動作 |
-|:--|:--|
+| パッケージ                                                            | 動作                                                                             |
+| :-------------------------------------------------------------------- | :------------------------------------------------------------------------------- |
 | [`snes-rom-image`](https://github.com/gufranco/snes-rom-image-python) | すべてのヘッダーミラーを見つけ、フィールドを書き換え、チェックサムを再計算します |
-| [`snes-mapper`](https://github.com/gufranco/snes-mapper-python) | ヘッダーがあり得る場所の中から、ヘッダーの位置を決めます |
+| [`snes-mapper`](https://github.com/gufranco/snes-mapper-python)       | ヘッダーがあり得る場所の中から、ヘッダーの位置を決めます                         |
 
 - [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/)、neviksti、Romhacking.net
 - [S-DD1](https://wiki.superfamicom.org/s-dd1)、Super Famicom Development Wiki
 - [SNES: Star Ocean English translation/hack](https://github.com/frederic-mahe/Hardware-Target-Game-Database/issues/622)、Hardware Target Game Database
-- *SNES Development Manual, Book I*、Nintendo of America Inc.。21,022,582バイト、SHA-256 `f1405241000046abba7849376d2ec53cf85f1ad2e9950d69a7c2cf1f3ff6b791`。再配布はできず、このリポジトリには含まれていません。[`conformance/documents.json`](conformance/documents.json)がその識別情報を持ち、`python3 -m conformance.documents`がhttps://archive.org/download/SNESDevManual/book1_text.pdf から、gitが無視する`docs/`にダウンロードし、それ以外のファイルは拒否します。`python3 -m conformance.documents --check`は、すでにあるコピーを検証します。
+- _SNES Development Manual, Book I_、Nintendo of America Inc.。21,022,582バイト、SHA-256 `f1405241000046abba7849376d2ec53cf85f1ad2e9950d69a7c2cf1f3ff6b791`。再配布はできず、このリポジトリには含まれていません。[`conformance/documents.json`](conformance/documents.json)がその識別情報を持ち、`python3 -m conformance.documents`がhttps://archive.org/download/SNESDevManual/book1_text.pdf から、gitが無視する`docs/`にダウンロードし、それ以外のファイルは拒否します。`python3 -m conformance.documents --check`は、すでにあるコピーを検証します。
 
 ## 引用
 

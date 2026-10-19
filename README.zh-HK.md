@@ -37,10 +37,10 @@ wrong
 
 ## 安裝
 
-| 要求 | 版本 |
-|:--|:--|
-| Python | 3.12 或更新 |
-| git | 任何版本，用於取得子模組 |
+| 要求   | 版本                     |
+| :----- | :----------------------- |
+| Python | 3.12 或更新              |
+| git    | 任何版本，用於取得子模組 |
 
 ```bash
 git clone --recurse-submodules https://github.com/gufranco/snes-star-ocean-nochip-fix.git
@@ -71,11 +71,11 @@ python3 starocean/verify.py roms dist
 python3 starocean/fix.py roms dist
 ```
 
-| 命令 | 參數 | 作用 | 結束碼 |
-|:--|:--|:--|:--|
-| `python3 starocean/verify.py` | `[source] [destination]`，預設為 `roms` 和 `dist` | 尋找兩條鏈的全部四個環節，逐一報告，不寫入任何東西 | 0 找到的每個檔案都相符，1 找到的某個檔案不相符，2 兩條鏈的檔案都不存在 |
-| `python3 starocean/fix.py` | `[source] [destination]`，預設為下述的來源目錄和 `dist` | 確認每個重建版，修正它，確認結果，然後寫入 | 0 至少寫入一個映像檔且沒有拒絕任何映像檔，1 有映像檔被拒絕，2 兩個重建版都不存在 |
-| `python3 starocean/doctor.py` | 無 | 報告本機上有甚麼 | 0 所有檢查通過，1 有一項不通過 |
+| 命令                          | 參數                                                    | 作用                                               | 結束碼                                                                           |
+| :---------------------------- | :------------------------------------------------------ | :------------------------------------------------- | :------------------------------------------------------------------------------- |
+| `python3 starocean/verify.py` | `[source] [destination]`，預設為 `roms` 和 `dist`       | 尋找兩條鏈的全部四個環節，逐一報告，不寫入任何東西 | 0 找到的每個檔案都相符，1 找到的某個檔案不相符，2 兩條鏈的檔案都不存在           |
+| `python3 starocean/fix.py`    | `[source] [destination]`，預設為下述的來源目錄和 `dist` | 確認每個重建版，修正它，確認結果，然後寫入         | 0 至少寫入一個映像檔且沒有拒絕任何映像檔，1 有映像檔被拒絕，2 兩個重建版都不存在 |
+| `python3 starocean/doctor.py` | 無                                                      | 報告本機上有甚麼                                   | 0 所有檢查通過，1 有一項不通過                                                   |
 
 `fix.py` 沒有收到來源參數時，會從 `STAR_OCEAN_ROM_DIR` 指定的目錄讀取。即使指定的目錄是空的，也照樣使用，不會改用其他目錄，因此路徑打錯時會找不到任何映像檔，而不是找到別處的映像檔。沒有設定該變數時，它會在本副本旁邊的 `roms` 和副本內的 [`roms/`](roms/) 之中，取第一個存在的目錄。`verify.py` 只從參數取得目錄。
 
@@ -107,28 +107,28 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### 讀取與修正
 
-| 呼叫 | 作用 | 傳回 |
-|:--|:--|:--|
+| 呼叫                                                  | 作用                                                                                                                                                         | 傳回                |
+| :---------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
 | `look(source=None, catalogue=None, destination=None)` | 尋找每條鏈的每個環節：在 `source` 下尋找 `source`、`patch` 和 `reads`，在 `destination` 下尋找 `writes`。會遍歷子目錄。預設值為 `roms`、`EDITIONS` 和 `dist` | 一個 `Finding` 清單 |
-| `report(findings)` | 每項結果一行，`altered` 或 `corrupt` 的檔案會附上找到的 sha256 的首 16 個十六進位數字 | 一個字串清單 |
-| `verdict(findings)` | 有任何結果為 `altered` 或 `corrupt` 時為 `WRONG`，否則有任何結果為 `matches` 時為 `SOUND`，否則為 `NOTHING` | 一個字串 |
-| `confirm(image, edition)` | 先檢查長度，再檢查 sha256，然後以 `edition.before` 核對其餘三個摘要值 | 該 `edition` |
-| `correct(image)` | 在每個檔頭鏡像中宣告沒有協處理器及映像檔的實際大小，並重新計算校驗和。不作任何檢查 | 修正後的位元組 |
-| `apply(image, edition)` | 執行 `confirm`、`correct`，然後以 `edition.after` 核對結果的四個摘要值 | 修正後的位元組 |
-| `run(edition, source, destination)` | 從 `source` 讀取 `edition.reads`，套用修正，並在 `destination` 下寫入 `edition.writes`，有需要時建立該目錄 | 寫入的路徑 |
-| `digests_of(data)` | crc32、md5、sha1 和 sha256，以小寫十六進位表示 | 一個 dict |
-| `directories(environment=None)` | `fix.py` 尋找的位置：`STAR_OCEAN_ROM_DIR` 按路徑分隔符拆分後的每一項，然後是副本旁邊的 `roms`，然後是副本內的 `roms` | 一個路徑 tuple |
-| `source_directory(environment=None, places=None)` | 已設定 `STAR_OCEAN_ROM_DIR` 時按原樣使用它，否則取 `places` 中第一個是目錄的項目，否則取副本內的 `roms` | 一個路徑 |
+| `report(findings)`                                    | 每項結果一行，`altered` 或 `corrupt` 的檔案會附上找到的 sha256 的首 16 個十六進位數字                                                                        | 一個字串清單        |
+| `verdict(findings)`                                   | 有任何結果為 `altered` 或 `corrupt` 時為 `WRONG`，否則有任何結果為 `matches` 時為 `SOUND`，否則為 `NOTHING`                                                  | 一個字串            |
+| `confirm(image, edition)`                             | 先檢查長度，再檢查 sha256，然後以 `edition.before` 核對其餘三個摘要值                                                                                        | 該 `edition`        |
+| `correct(image)`                                      | 在每個檔頭鏡像中宣告沒有協處理器及映像檔的實際大小，並重新計算校驗和。不作任何檢查                                                                           | 修正後的位元組      |
+| `apply(image, edition)`                               | 執行 `confirm`、`correct`，然後以 `edition.after` 核對結果的四個摘要值                                                                                       | 修正後的位元組      |
+| `run(edition, source, destination)`                   | 從 `source` 讀取 `edition.reads`，套用修正，並在 `destination` 下寫入 `edition.writes`，有需要時建立該目錄                                                   | 寫入的路徑          |
+| `digests_of(data)`                                    | crc32、md5、sha1 和 sha256，以小寫十六進位表示                                                                                                               | 一個 dict           |
+| `directories(environment=None)`                       | `fix.py` 尋找的位置：`STAR_OCEAN_ROM_DIR` 按路徑分隔符拆分後的每一項，然後是副本旁邊的 `roms`，然後是副本內的 `roms`                                         | 一個路徑 tuple      |
+| `source_directory(environment=None, places=None)`     | 已設定 `STAR_OCEAN_ROM_DIR` 時按原樣使用它，否則取 `places` 中第一個是目錄的項目，否則取副本內的 `roms`                                                      | 一個路徑            |
 
 `look`、`report`、`verdict`、`confirm`、`correct`、`apply` 和 `digests_of` 不寫入任何東西。`run` 是唯一會寫入的呼叫。
 
-| `Finding` 屬性 | 意思 |
-|:--|:--|
-| `edition` | 該環節所屬的 `Edition` |
-| `step` | 它是哪一個 `Step` |
-| `path` | 尋找或找到它的位置 |
-| `state` | `ABSENT`、`MATCHES`、sha256 不同時為 `ALTERED`，sha256 相符但另一個摘要值不相符時為 `CORRUPT` |
-| `found` | 該檔案的四個摘要值，檔案不存在時為 `None` |
+| `Finding` 屬性 | 意思                                                                                          |
+| :------------- | :-------------------------------------------------------------------------------------------- |
+| `edition`      | 該環節所屬的 `Edition`                                                                        |
+| `step`         | 它是哪一個 `Step`                                                                             |
+| `path`         | 尋找或找到它的位置                                                                            |
+| `state`        | `ABSENT`、`MATCHES`、sha256 不同時為 `ALTERED`，sha256 相符但另一個摘要值不相符時為 `CORRUPT` |
+| `found`        | 該檔案的四個摘要值，檔案不存在時為 `None`                                                     |
 
 ```python
 import os
@@ -152,23 +152,23 @@ True
 
 ### 版本及其鏈
 
-| 名稱 | 內容 |
-|:--|:--|
-| `EDITIONS` | 兩個 `Edition` 記錄，先 `japanese` 後 `english`，從 [`editions.manifest.json`](editions.manifest.json) 載入 |
-| `named(name, among=None)` | 該名稱的版本。名稱不符時引發 `UnknownEdition` |
-| `matching(digest, among=None)` | 輸入的 sha256 為該值的版本，或 `None` |
-| `load(path=None)`、`load_patch(path=None)` | 從清單讀取的版本或 `Patch`，預設使用本副本中的清單 |
-| `PATCH` | `Patch` 記錄：`name`、`version`、`author`、`where`、`note`、`archive` |
-| `EXPECTED_BYTES` | `0xC00000`，即 12,582,912 位元組，每個輸入和輸出的長度 |
+| 名稱                                       | 內容                                                                                                        |
+| :----------------------------------------- | :---------------------------------------------------------------------------------------------------------- |
+| `EDITIONS`                                 | 兩個 `Edition` 記錄，先 `japanese` 後 `english`，從 [`editions.manifest.json`](editions.manifest.json) 載入 |
+| `named(name, among=None)`                  | 該名稱的版本。名稱不符時引發 `UnknownEdition`                                                               |
+| `matching(digest, among=None)`             | 輸入的 sha256 為該值的版本，或 `None`                                                                       |
+| `load(path=None)`、`load_patch(path=None)` | 從清單讀取的版本或 `Patch`，預設使用本副本中的清單                                                          |
+| `PATCH`                                    | `Patch` 記錄：`name`、`version`、`author`、`where`、`note`、`archive`                                       |
+| `EXPECTED_BYTES`                           | `0xC00000`，即 12,582,912 位元組，每個輸入和輸出的長度                                                      |
 
-| `Edition` 屬性 | 意思 |
-|:--|:--|
-| `name`、`summary` | 版本名稱，以及一句關於它的說明 |
-| `reads`、`writes` | 修正讀取的檔案名稱和寫入的檔案名稱 |
-| `size` | 這兩個檔案必須具有的長度 |
-| `before`、`after` | 輸入和輸出各自的四個摘要值 |
-| `source`、`patch` | 零售版卡帶和 neviksti 修補檔的清單項目 |
-| `chain()` | 按順序排列的四個 `Step` 記錄：`source`、`patch`、`reads`、`writes` |
+| `Edition` 屬性    | 意思                                                               |
+| :---------------- | :----------------------------------------------------------------- |
+| `name`、`summary` | 版本名稱，以及一句關於它的說明                                     |
+| `reads`、`writes` | 修正讀取的檔案名稱和寫入的檔案名稱                                 |
+| `size`            | 這兩個檔案必須具有的長度                                           |
+| `before`、`after` | 輸入和輸出各自的四個摘要值                                         |
+| `source`、`patch` | 零售版卡帶和 neviksti 修補檔的清單項目                             |
+| `chain()`         | 按順序排列的四個 `Step` 記錄：`source`、`patch`、`reads`、`writes` |
 
 `Step` 帶有 `what`、`name`、`held` 和 `produced`，其中 `produced` 只在 `writes` 時為真。`step.bytes` 是它的固定長度，`step.digest(which=None)` 傳回一個固定摘要值，預設為 sha256。
 
@@ -201,11 +201,11 @@ The same patch on the DeJap English translation. The two are not interchangeable
 
 ### 摘要值
 
-| 名稱 | 內容 |
-|:--|:--|
-| `DIGESTS` | `('crc32', 'md5', 'sha1', 'sha256')`，檔案要核對的全部摘要值 |
-| `DECIDES` | `'sha256'`，用來識別檔案的摘要值。其餘三個用作交叉核對 |
-| `DIGEST_WIDTHS` | 各自的十六進位長度：8、32、40 和 64 |
+| 名稱            | 內容                                                         |
+| :-------------- | :----------------------------------------------------------- |
+| `DIGESTS`       | `('crc32', 'md5', 'sha1', 'sha256')`，檔案要核對的全部摘要值 |
+| `DECIDES`       | `'sha256'`，用來識別檔案的摘要值。其餘三個用作交叉核對       |
+| `DIGEST_WIDTHS` | 各自的十六進位長度：8、32、40 和 64                          |
 
 ```python
 from starocean import DECIDES, DIGEST_WIDTHS, DIGESTS, digests_of, matching, named
@@ -232,14 +232,14 @@ None
 
 六種錯誤全部定義在 [`starocean/errors.py`](starocean/errors.py)，並且都在套件根層級公開。
 
-| 錯誤 | 引發者 | 時機 |
-|:--|:--|:--|
-| `Unrecognised` | `confirm`、`apply` | 檔案長度錯誤，或長度正確但 sha256 不同 |
-| `Corrupt` | `confirm`、`apply` | sha256 相符，但四個摘要值中另有一個不相符，即清單自相矛盾 |
-| `NotACartridge` | `correct`、`apply` | 在位元組中找不到卡帶檔頭 |
-| `Unexpected` | `apply` | 輸入是指定的那個檔案，但修正結果的 sha256 與固定值不同 |
-| `Missing` | `run` | 版本要讀取的檔案不在來源目錄中 |
-| `UnknownEdition` | `named` | 沒有該名稱的版本 |
+| 錯誤             | 引發者             | 時機                                                      |
+| :--------------- | :----------------- | :-------------------------------------------------------- |
+| `Unrecognised`   | `confirm`、`apply` | 檔案長度錯誤，或長度正確但 sha256 不同                    |
+| `Corrupt`        | `confirm`、`apply` | sha256 相符，但四個摘要值中另有一個不相符，即清單自相矛盾 |
+| `NotACartridge`  | `correct`、`apply` | 在位元組中找不到卡帶檔頭                                  |
+| `Unexpected`     | `apply`            | 輸入是指定的那個檔案，但修正結果的 sha256 與固定值不同    |
+| `Missing`        | `run`              | 版本要讀取的檔案不在來源目錄中                            |
+| `UnknownEdition` | `named`            | 沒有該名稱的版本                                          |
 
 `fix.py` 將 `Missing` 報告為 `not here`，然後繼續處理下一個版本。其餘四種則報告為 `refused`，不為該版本寫入任何東西，並以 1 結束。
 
@@ -298,18 +298,18 @@ Missing: Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc is not in nowhere
 
 ### 版本號與狀態
 
-| 名稱 | 內容 |
-|:--|:--|
-| `VERSION`、`__version__` | 本副本所屬的版本，由發佈工作寫入 |
-| `ABSENT`、`MATCHES`、`ALTERED`、`CORRUPT` | `Finding` 的四種狀態 |
-| `NOTHING`、`SOUND`、`WRONG` | `verdict` 的三種答案 |
+| 名稱                                      | 內容                             |
+| :---------------------------------------- | :------------------------------- |
+| `VERSION`、`__version__`                  | 本副本所屬的版本，由發佈工作寫入 |
+| `ABSENT`、`MATCHES`、`ALTERED`、`CORRUPT` | `Finding` 的四種狀態             |
+| `NOTHING`、`SOUND`、`WRONG`               | `verdict` 的三種答案             |
 
 ## 鳴謝
 
-| 誰 | 貢獻 |
-|:--|:--|
-| **neviksti** | 逆向工程 S-DD1，並編寫了 [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/)。它預先解壓圖像，並以 96 Mbit 重建卡帶，因此不再需要該晶片。共有兩個修補檔，一個用於日文原版，一個用於翻譯版 |
-| **DeJap Translations** | 第二個修補檔所基於的英文翻譯 |
+| 誰                     | 貢獻                                                                                                                                                                                                           |
+| :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **neviksti**           | 逆向工程 S-DD1，並編寫了 [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/)。它預先解壓圖像，並以 96 Mbit 重建卡帶，因此不再需要該晶片。共有兩個修補檔，一個用於日文原版，一個用於翻譯版 |
+| **DeJap Translations** | 第二個修補檔所基於的英文翻譯                                                                                                                                                                                   |
 
 neviksti 明言的目的是真實硬件：Game Doctor SF7 等備份裝置、燒錄卡帶和自製電路板都沒有 S-DD1，所以未經修改的 Star Ocean 無法在上面運行。這些機器同時也是會讀取檔頭的機器。
 
@@ -317,11 +317,11 @@ neviksti 明言的目的是真實硬件：Game Doctor SF7 等備份裝置、燒�
 
 Star Ocean 以 S-DD1 電路板發行，該晶片在圖像傳送到主機的途中將其解壓。套用 neviksti 的修補檔後，數據已經是解壓後的狀態。但兩個重建版的檔頭仍然宣告有 S-DD1。
 
-| 欄位 | 現時的值 | 應有的值 |
-|:--|:--|:--|
-| 晶片組 | `0x45`，帶存檔記憶體的 S-DD1 | `0x00`，沒有協處理器 |
-| 宣告大小 | `0x0D`，8 MB | `0x0E`，16 MB，即能容納 12 MB 的最小二的冪 |
-| 校驗和及其補數 | 涵蓋舊欄位 | 涵蓋新欄位 |
+| 欄位           | 現時的值                     | 應有的值                                   |
+| :------------- | :--------------------------- | :----------------------------------------- |
+| 晶片組         | `0x45`，帶存檔記憶體的 S-DD1 | `0x00`，沒有協處理器                       |
+| 宣告大小       | `0x0D`，8 MB                 | `0x0E`，16 MB，即能容納 12 MB 的最小二的冪 |
+| 校驗和及其補數 | 涵蓋舊欄位                   | 涵蓋新欄位                                 |
 
 大小欄位存放的是二的冪，而 12 MB 不是二的冪，因此重建版繼承了一個從來沒有與其長度相符的宣告。
 
@@ -343,10 +343,10 @@ graph LR
 
 ## 兩個版本
 
-| 版本 | 起點 | 修補檔 | 寫入 |
-|:--|:--|:--|:--|
-| `japanese` | `Star Ocean (Japan).sfc` | `96Mbit_SO_JPN.xdelta` | `star-ocean-jp-nochip.sfc` |
-| `english` | `Star Ocean (J) T+Eng v1.0 DeJap.sfc`，即套用了 DeJap 翻譯的同一卡帶 | `96Mbit_SO_ENG.xdelta` | `star-ocean-en-nochip.sfc` |
+| 版本       | 起點                                                                 | 修補檔                 | 寫入                       |
+| :--------- | :------------------------------------------------------------------- | :--------------------- | :------------------------- |
+| `japanese` | `Star Ocean (Japan).sfc`                                             | `96Mbit_SO_JPN.xdelta` | `star-ocean-jp-nochip.sfc` |
+| `english`  | `Star Ocean (J) T+Eng v1.0 DeJap.sfc`，即套用了 DeJap 翻譯的同一卡帶 | `96Mbit_SO_ENG.xdelta` | `star-ocean-en-nochip.sfc` |
 
 兩個修補檔不能互換。英文鏈須按 neviksti 的指示，先套用 DeJap 的翻譯，再套用 96 Mbit 修補檔。
 
@@ -374,12 +374,12 @@ graph LR
 
 兩個檔頭鏡像各改動六個位元組，鏡像位於 `0x7FC0` 和 `0xA07FC0`：
 
-| 鏡像內的偏移 | 欄位 | 修改前 | 修改後 |
-|:--|:--|:--|:--|
-| `0x16` | 晶片組 | `0x45` | `0x00` |
-| `0x17` | 宣告大小 | `0x0D` | `0x0E` |
-| `0x1C`、`0x1D` | 校驗和補數 | 舊值 | 重新計算 |
-| `0x1E`、`0x1F` | 校驗和 | 舊值 | 重新計算 |
+| 鏡像內的偏移   | 欄位       | 修改前 | 修改後   |
+| :------------- | :--------- | :----- | :------- |
+| `0x16`         | 晶片組     | `0x45` | `0x00`   |
+| `0x17`         | 宣告大小   | `0x0D` | `0x0E`   |
+| `0x1C`、`0x1D` | 校驗和補數 | 舊值   | 重新計算 |
+| `0x1E`、`0x1F` | 校驗和     | 舊值   | 重新計算 |
 
 有一項測試斷言每個改動的位元組都位於檔頭鏡像之內，並且對已修正的映像檔再修正一次不會改變任何東西。
 
@@ -411,13 +411,13 @@ python3 conformance/against_images.test.py
 
 ## 參與開發
 
-| 需要 | 位置 |
-|:--|:--|
-| 所有關卡檢查及其執行次序 | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| 供編程代理使用的相同資料 | [AGENTS.md](AGENTS.md) |
-| 本儲存庫與同系列其他儲存庫共用的標準 | [FAMILY.md](FAMILY.md) |
-| 錯誤報告 | [GitHub Issues](https://github.com/gufranco/snes-star-ocean-nochip-fix/issues) |
-| 安全報告 | [SECURITY.md](SECURITY.md) |
+| 需要                                 | 位置                                                                           |
+| :----------------------------------- | :----------------------------------------------------------------------------- |
+| 所有關卡檢查及其執行次序             | [CONTRIBUTING.md](CONTRIBUTING.md)                                             |
+| 供編程代理使用的相同資料             | [AGENTS.md](AGENTS.md)                                                         |
+| 本儲存庫與同系列其他儲存庫共用的標準 | [FAMILY.md](FAMILY.md)                                                         |
+| 錯誤報告                             | [GitHub Issues](https://github.com/gufranco/snes-star-ocean-nochip-fix/issues) |
+| 安全報告                             | [SECURITY.md](SECURITY.md)                                                     |
 
 ```bash
 uvx ruff@0.16.3 format --check .
@@ -437,15 +437,15 @@ python3 -m conformance.speed
 
 ## 參考資料
 
-| 套件 | 作用 |
-|:--|:--|
+| 套件                                                                  | 作用                                       |
+| :-------------------------------------------------------------------- | :----------------------------------------- |
 | [`snes-rom-image`](https://github.com/gufranco/snes-rom-image-python) | 找出每個檔頭鏡像，重寫欄位，重新計算校驗和 |
-| [`snes-mapper`](https://github.com/gufranco/snes-mapper-python) | 在檔頭可能所在的位置之中，決定它在哪裏 |
+| [`snes-mapper`](https://github.com/gufranco/snes-mapper-python)       | 在檔頭可能所在的位置之中，決定它在哪裏     |
 
 - [Star Ocean no S-DD1/96Mbit hack](https://www.romhacking.net/hacks/614/)，neviksti，刊於 Romhacking.net
 - [S-DD1](https://wiki.superfamicom.org/s-dd1)，Super Famicom Development Wiki
 - [SNES: Star Ocean English translation/hack](https://github.com/frederic-mahe/Hardware-Target-Game-Database/issues/622)，Hardware Target Game Database
-- *SNES Development Manual, Book I*，Nintendo of America Inc.，21,022,582 位元組，SHA-256 `f1405241000046abba7849376d2ec53cf85f1ad2e9950d69a7c2cf1f3ff6b791`。此手冊不可再分發，亦不在本儲存庫中。[`conformance/documents.json`](conformance/documents.json) 記載其身份，`python3 -m conformance.documents` 會從 https://archive.org/download/SNESDevManual/book1_text.pdf 將它下載到 git 忽略的 `docs/`，並拒絕任何其他檔案。`python3 -m conformance.documents --check` 會核對已存在的副本。
+- _SNES Development Manual, Book I_，Nintendo of America Inc.，21,022,582 位元組，SHA-256 `f1405241000046abba7849376d2ec53cf85f1ad2e9950d69a7c2cf1f3ff6b791`。此手冊不可再分發，亦不在本儲存庫中。[`conformance/documents.json`](conformance/documents.json) 記載其身份，`python3 -m conformance.documents` 會從 https://archive.org/download/SNESDevManual/book1_text.pdf 將它下載到 git 忽略的 `docs/`，並拒絕任何其他檔案。`python3 -m conformance.documents --check` 會核對已存在的副本。
 
 ## 引用本專案
 

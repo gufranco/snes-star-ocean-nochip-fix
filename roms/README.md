@@ -31,13 +31,13 @@ a run that reports nothing needed doing.
 
 ## The patch archive
 
-| Field | Value |
-|-------|-------|
-| File | `Star Ocean 96Mbit patch - xdelta.zip` |
-| Bytes | 5514721 |
-| crc32 | `0c533f68` |
-| md5 | `00feb1f170127af9b12f5c6c825b695d` |
-| sha1 | `ba3681fad685a278ffe5858b4f8e5cbfe4fb016f` |
+| Field  | Value                                                              |
+| ------ | ------------------------------------------------------------------ |
+| File   | `Star Ocean 96Mbit patch - xdelta.zip`                             |
+| Bytes  | 5514721                                                            |
+| crc32  | `0c533f68`                                                         |
+| md5    | `00feb1f170127af9b12f5c6c825b695d`                                 |
+| sha1   | `ba3681fad685a278ffe5858b4f8e5cbfe4fb016f`                         |
 | sha256 | `f820128d161f5e3fea8a839100b08c63fd435f433e28269ff95e63907a18b2c0` |
 
 ## What this writes changed on 2026-08-25
@@ -66,46 +66,46 @@ neviksti's patch on the Japanese original, decompressed to ninety six megabit.
 
 **1. The cartridge it starts from.** The Japanese retail cartridge.
 
-| Field | Value |
-|-------|-------|
-| File | `Star Ocean (Japan).sfc` |
-| Bytes | 6291456 |
-| crc32 | `3dbdfdbf` |
-| md5 | `d686ba6df942084216393ada009126dc` |
-| sha1 | `a616ee3466256482bc0adc11f1fda7c30e66ef8d` |
+| Field  | Value                                                              |
+| ------ | ------------------------------------------------------------------ |
+| File   | `Star Ocean (Japan).sfc`                                           |
+| Bytes  | 6291456                                                            |
+| crc32  | `3dbdfdbf`                                                         |
+| md5    | `d686ba6df942084216393ada009126dc`                                 |
+| sha1   | `a616ee3466256482bc0adc11f1fda7c30e66ef8d`                         |
 | sha256 | `efae37be832d0ea1490784d57bef00761a8bf0b5bcef9c23f558e063441c3876` |
 
 **2. The patch applied to it.**
 
-| Field | Value |
-|-------|-------|
-| File | `96Mbit_SO_JPN.xdelta` |
-| Bytes | 3227030 |
-| crc32 | `b0bff91f` |
-| md5 | `d3a781639a0d4a5f05c8602be2c449f0` |
-| sha1 | `6996194ef50db0a3aa214582bc56b6df33562912` |
+| Field  | Value                                                              |
+| ------ | ------------------------------------------------------------------ |
+| File   | `96Mbit_SO_JPN.xdelta`                                             |
+| Bytes  | 3227030                                                            |
+| crc32  | `b0bff91f`                                                         |
+| md5    | `d3a781639a0d4a5f05c8602be2c449f0`                                 |
+| sha1   | `6996194ef50db0a3aa214582bc56b6df33562912`                         |
 | sha256 | `8c3869301f396f4403b51493cceda4c3b2d8da2e4eba8e91e2c58618e0f77099` |
 
 **3. What that produces, and what this reads.**
 
-| Field | Value |
-|-------|-------|
-| File | `Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc` |
-| Bytes | 12582912 |
-| crc32 | `4dbe75be` |
-| md5 | `2bfd0e8ed3510109d728a1bbf380827b` |
-| sha1 | `947e4d19004f036d7586718d3414d36b64ecdf68` |
+| Field  | Value                                                              |
+| ------ | ------------------------------------------------------------------ |
+| File   | `Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc`               |
+| Bytes  | 12582912                                                           |
+| crc32  | `4dbe75be`                                                         |
+| md5    | `2bfd0e8ed3510109d728a1bbf380827b`                                 |
+| sha1   | `947e4d19004f036d7586718d3414d36b64ecdf68`                         |
 | sha256 | `e5ba9bef71c8ea31ce9650b90a60245c3434ff679475f847903011bf69e6d338` |
 
 **4. What this writes.**
 
-| Field | Value |
-|-------|-------|
-| File | `star-ocean-jp-nochip.sfc` |
-| Bytes | 12582912 |
-| crc32 | `e2f62c1e` |
-| md5 | `075d99d327b4038f22263049fb160c64` |
-| sha1 | `857453805be297f1d0f75b5e8a0af603bc507cbb` |
+| Field  | Value                                                              |
+| ------ | ------------------------------------------------------------------ |
+| File   | `star-ocean-jp-nochip.sfc`                                         |
+| Bytes  | 12582912                                                           |
+| crc32  | `e2f62c1e`                                                         |
+| md5    | `075d99d327b4038f22263049fb160c64`                                 |
+| sha1   | `857453805be297f1d0f75b5e8a0af603bc507cbb`                         |
 | sha256 | `4656c58a296b8901f29456e2920ab85778f84f923c52fda94fa77387695f2516` |
 
 ### english
@@ -114,46 +114,46 @@ The same patch on the DeJap English translation. The two are not interchangeable
 
 **1. The cartridge it starts from.** The Japanese retail cartridge with DeJap's English translation already applied.
 
-| Field | Value |
-|-------|-------|
-| File | `Star Ocean (J) T+Eng v1.0 DeJap.sfc` |
-| Bytes | 6291456 |
-| crc32 | `6ba9e08d` |
-| md5 | `217a97e694fb916ad26c8a471f6c0e84` |
-| sha1 | `8574f0c49b0e823f21763331c2d66225b95c1653` |
+| Field  | Value                                                              |
+| ------ | ------------------------------------------------------------------ |
+| File   | `Star Ocean (J) T+Eng v1.0 DeJap.sfc`                              |
+| Bytes  | 6291456                                                            |
+| crc32  | `6ba9e08d`                                                         |
+| md5    | `217a97e694fb916ad26c8a471f6c0e84`                                 |
+| sha1   | `8574f0c49b0e823f21763331c2d66225b95c1653`                         |
 | sha256 | `504050fcbcf1b6768448aed48298ad388b76271412a8cb9659937cddbe8e1385` |
 
 **2. The patch applied to it.**
 
-| Field | Value |
-|-------|-------|
-| File | `96Mbit_SO_ENG.xdelta` |
-| Bytes | 2869793 |
-| crc32 | `3cfe8cd5` |
-| md5 | `dd9136abfbe02bf430960d67eb3d2e56` |
-| sha1 | `95ec51cb2aba2f59d064241fd3041348e7f21050` |
+| Field  | Value                                                              |
+| ------ | ------------------------------------------------------------------ |
+| File   | `96Mbit_SO_ENG.xdelta`                                             |
+| Bytes  | 2869793                                                            |
+| crc32  | `3cfe8cd5`                                                         |
+| md5    | `dd9136abfbe02bf430960d67eb3d2e56`                                 |
+| sha1   | `95ec51cb2aba2f59d064241fd3041348e7f21050`                         |
 | sha256 | `83b209ef73241fa37f6d355da3786ea2617b97a171ae98d535ec5ecaeb65d66e` |
 
 **3. What that produces, and what this reads.**
 
-| Field | Value |
-|-------|-------|
-| File | `Star Ocean (J) T+Eng, SDD1 Patched v1 DeJap, SDD1 v1 Neviksti.sfc` |
-| Bytes | 12582912 |
-| crc32 | `b1d82240` |
-| md5 | `8ac766702be51975faab7a431c89d9b2` |
-| sha1 | `7dbaa0265bb5d33422808bad1041cdc8f9585eb4` |
-| sha256 | `1bcb3b8b58f19a91540aeb5ca975fe2386ca0b55a5ff924be6a3514010b2e5c3` |
+| Field  | Value                                                               |
+| ------ | ------------------------------------------------------------------- |
+| File   | `Star Ocean (J) T+Eng, SDD1 Patched v1 DeJap, SDD1 v1 Neviksti.sfc` |
+| Bytes  | 12582912                                                            |
+| crc32  | `b1d82240`                                                          |
+| md5    | `8ac766702be51975faab7a431c89d9b2`                                  |
+| sha1   | `7dbaa0265bb5d33422808bad1041cdc8f9585eb4`                          |
+| sha256 | `1bcb3b8b58f19a91540aeb5ca975fe2386ca0b55a5ff924be6a3514010b2e5c3`  |
 
 **4. What this writes.**
 
-| Field | Value |
-|-------|-------|
-| File | `star-ocean-en-nochip.sfc` |
-| Bytes | 12582912 |
-| crc32 | `4f487385` |
-| md5 | `94103789fb45494fe8df9591e11c17d0` |
-| sha1 | `d9f47ca39553f28c8e1ffac0924898616459e090` |
+| Field  | Value                                                              |
+| ------ | ------------------------------------------------------------------ |
+| File   | `star-ocean-en-nochip.sfc`                                         |
+| Bytes  | 12582912                                                           |
+| crc32  | `4f487385`                                                         |
+| md5    | `94103789fb45494fe8df9591e11c17d0`                                 |
+| sha1   | `d9f47ca39553f28c8e1ffac0924898616459e090`                         |
 | sha256 | `3f0af092ae356444b1348526916d90ac5cd53af9a47c2e6b1d66e1dec3045a89` |
 
 ## What is checked
@@ -178,4 +178,3 @@ Publications v. Rural Telephone Service. Correcting a header on a copy you own i
 the kind of examination and adaptation Sega v. Accolade and Sony v. Connectix hold
 to be fair. None of that extends to the game, the translation or the patch, which
 is why none of them is here.
-
