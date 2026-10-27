@@ -21,6 +21,7 @@ jobs:
   lint:
     name: Format and lint
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -69,6 +70,7 @@ jobs:
   types:
     name: Types
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -87,6 +89,7 @@ jobs:
   test:
     name: Tests on Python ${{ matrix.python }}
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -121,6 +124,7 @@ jobs:
   speed:
     name: Throughput
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -136,6 +140,7 @@ jobs:
   images:
     name: Images
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
