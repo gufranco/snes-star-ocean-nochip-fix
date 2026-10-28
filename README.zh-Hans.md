@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2** 个版本，每个镜像改动 **12** 个字节且别处不变，两条链共 **32** 个固定摘要，**0** 处不一致，**643** 个测试，**100%** 语句与分支覆盖率，无依赖
+**2** 个版本，每个镜像改动 **12** 个字节且别处不变，两条链共 **32** 个固定摘要，**0** 处不一致，**694** 个测试，**100%** 语句与分支覆盖率，无依赖
 
 ```python
 import tempfile
@@ -50,7 +50,7 @@ python3 starocean/doctor.py
 
 文件头读取器是子模块 `snes-rom-image-python`，它使用的内存映射是嵌套在其中的子模块 `snes-mapper-python`。通过 download-zip 链接下载的源码归档不包含这两者，因此这样的检出无法修正任何内容。如果检出时没有使用 `--recurse-submodules`，请运行 `git submodule update --init --recursive`。
 
-诊断脚本会报告本机、子模块、清单，以及它在 [`roms/`](roms/) 和 `dist/` 下找到的两条链的每个环节，最后输出一行结论。提交错误报告时请粘贴其完整输出。所有检查都通过时退出码为 0，有一项未通过时为 1。
+诊断脚本会报告本机、子模块、清单，以及它在 [`external/roms/`](ROMS.md) 和 `dist/` 下找到的两条链的每个环节，最后输出一行结论。提交错误报告时请粘贴其完整输出。所有检查都通过时退出码为 0，有一项未通过时为 1。
 
 ```
   14 checks, nothing to report
@@ -64,20 +64,20 @@ python3 starocean/doctor.py
 
 ### 命令
 
-文件由你自己提供。按 [`roms/README.md`](roms/README.md) 列出的文件名把它们放进 [`roms/`](roms/)，然后运行：
+文件由你自己提供。按 [ROMS.md](ROMS.md) 列出的文件名把它们放进 [`external/roms/`](ROMS.md)，然后运行：
 
 ```bash
-python3 starocean/verify.py roms dist
-python3 starocean/fix.py roms dist
+python3 starocean/verify.py external/roms dist
+python3 starocean/fix.py external/roms dist
 ```
 
-| 命令                          | 参数                                                      | 作用                                               | 退出码                                                                 |
-| :---------------------------- | :-------------------------------------------------------- | :------------------------------------------------- | :--------------------------------------------------------------------- |
-| `python3 starocean/verify.py` | `[source] [destination]`，默认为 `roms` 和 `dist`         | 查找两条链的全部四个环节，逐一报告，不写入任何内容 | 0 找到的每个文件都匹配，1 找到的某个文件不匹配，2 两条链的文件都不存在 |
-| `python3 starocean/fix.py`    | `[source] [destination]`，默认为下文所述的源目录和 `dist` | 确认每个重建版，加以修正，确认结果，然后写入       | 0 至少写入一个镜像且没有被拒绝的，1 有镜像被拒绝，2 两个重建版都不存在 |
-| `python3 starocean/doctor.py` | 无                                                        | 报告本机上的情况                                   | 0 所有检查都通过，1 有一项未通过                                       |
+| 命令                          | 参数                                                       | 作用                                               | 退出码                                                                 |
+| :---------------------------- | :--------------------------------------------------------- | :------------------------------------------------- | :--------------------------------------------------------------------- |
+| `python3 starocean/verify.py` | `[source] [destination]`，默认为 `external/roms` 和 `dist` | 查找两条链的全部四个环节，逐一报告，不写入任何内容 | 0 找到的每个文件都匹配，1 找到的某个文件不匹配，2 两条链的文件都不存在 |
+| `python3 starocean/fix.py`    | `[source] [destination]`，默认为下文所述的源目录和 `dist`  | 确认每个重建版，加以修正，确认结果，然后写入       | 0 至少写入一个镜像且没有被拒绝的，1 有镜像被拒绝，2 两个重建版都不存在 |
+| `python3 starocean/doctor.py` | 无                                                         | 报告本机上的情况                                   | 0 所有检查都通过，1 有一项未通过                                       |
 
-`fix.py` 没有收到源参数时，会从 `STAR_OCEAN_ROM_DIR` 指定的目录读取。指定的目录即使为空也照样使用，不会改用其他目录，因此路径输错时找不到任何镜像，而不是找到别处的镜像。没有该变量时，它在本检出目录旁的 `roms` 和其中的 [`roms/`](roms/) 之间取第一个存在的目录。`verify.py` 只通过参数获取目录。
+`fix.py` 没有收到源参数时，会从 `STAR_OCEAN_ROM_DIR` 指定的目录读取。指定的目录即使为空也照样使用，不会改用其他目录，因此路径输错时找不到任何镜像，而不是找到别处的镜像。没有该变量时，它在本检出目录旁的 `external/roms` 和其中的 [`external/roms/`](ROMS.md) 之间取第一个存在的目录。`verify.py` 只通过参数获取目录。
 
 ```python
 from starocean import fix, verify
@@ -107,18 +107,18 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### 读取与修正
 
-| 调用                                                  | 作用                                                                                                                                                         | 返回                |
-| :---------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
-| `look(source=None, catalogue=None, destination=None)` | 查找每条链的每个环节：在 `source` 下查找 `source`、`patch` 和 `reads`，在 `destination` 下查找 `writes`。会遍历子目录。默认值为 `roms`、`EDITIONS` 和 `dist` | 一个 `Finding` 列表 |
-| `report(findings)`                                    | 每个发现输出一行，对 `altered` 或 `corrupt` 的文件附上所得 sha256 的前 16 个十六进制位                                                                       | 一个字符串列表      |
-| `verdict(findings)`                                   | 任一发现为 `altered` 或 `corrupt` 时返回 `WRONG`，否则任一为 `matches` 时返回 `SOUND`，否则返回 `NOTHING`                                                    | 一个字符串          |
-| `confirm(image, edition)`                             | 依次检查长度、sha256，再将其余三个摘要与 `edition.before` 对照                                                                                               | 该 `edition`        |
-| `correct(image)`                                      | 在每个文件头镜像中声明无协处理器和镜像的实际大小，并重新计算校验和。不做任何检查                                                                             | 修正后的字节        |
-| `apply(image, edition)`                               | 执行 `confirm`、`correct`，再将结果的四个摘要与 `edition.after` 对照                                                                                         | 修正后的字节        |
-| `run(edition, source, destination)`                   | 从 `source` 读取 `edition.reads`，对其执行 apply，并在 `destination` 下写入 `edition.writes`，必要时创建该目录                                               | 写入的路径          |
-| `digests_of(data)`                                    | crc32、md5、sha1 和 sha256，小写十六进制                                                                                                                     | 一个 dict           |
-| `directories(environment=None)`                       | `fix.py` 查找的位置：先是 `STAR_OCEAN_ROM_DIR` 按路径分隔符拆分后的每一项，然后是检出目录旁的 `roms`，最后是其中的 `roms`                                    | 一个路径元组        |
-| `source_directory(environment=None, places=None)`     | 设置了 `STAR_OCEAN_ROM_DIR` 时原样返回它，否则返回 `places` 中第一个是目录的项，否则返回检出目录中的 `roms`                                                  | 一个路径            |
+| 调用                                                  | 作用                                                                                                                                                                  | 返回                |
+| :---------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
+| `look(source=None, catalogue=None, destination=None)` | 查找每条链的每个环节：在 `source` 下查找 `source`、`patch` 和 `reads`，在 `destination` 下查找 `writes`。会遍历子目录。默认值为 `external/roms`、`EDITIONS` 和 `dist` | 一个 `Finding` 列表 |
+| `report(findings)`                                    | 每个发现输出一行，对 `altered` 或 `corrupt` 的文件附上所得 sha256 的前 16 个十六进制位                                                                                | 一个字符串列表      |
+| `verdict(findings)`                                   | 任一发现为 `altered` 或 `corrupt` 时返回 `WRONG`，否则任一为 `matches` 时返回 `SOUND`，否则返回 `NOTHING`                                                             | 一个字符串          |
+| `confirm(image, edition)`                             | 依次检查长度、sha256，再将其余三个摘要与 `edition.before` 对照                                                                                                        | 该 `edition`        |
+| `correct(image)`                                      | 在每个文件头镜像中声明无协处理器和镜像的实际大小，并重新计算校验和。不做任何检查                                                                                      | 修正后的字节        |
+| `apply(image, edition)`                               | 执行 `confirm`、`correct`，再将结果的四个摘要与 `edition.after` 对照                                                                                                  | 修正后的字节        |
+| `run(edition, source, destination)`                   | 从 `source` 读取 `edition.reads`，对其执行 apply，并在 `destination` 下写入 `edition.writes`，必要时创建该目录                                                        | 写入的路径          |
+| `digests_of(data)`                                    | crc32、md5、sha1 和 sha256，小写十六进制                                                                                                                              | 一个 dict           |
+| `directories(environment=None)`                       | `fix.py` 查找的位置：先是 `STAR_OCEAN_ROM_DIR` 按路径分隔符拆分后的每一项，然后是检出目录旁的 `external/roms`，最后是其中的 `external/roms`                           | 一个路径元组        |
+| `source_directory(environment=None, places=None)`     | 设置了 `STAR_OCEAN_ROM_DIR` 时原样返回它，否则返回 `places` 中第一个是目录的项，否则返回检出目录中的 `external/roms`                                                  | 一个路径            |
 
 `look`、`report`、`verdict`、`confirm`、`correct`、`apply` 和 `digests_of` 不写入任何内容。`run` 是唯一会写入的调用。
 
@@ -360,7 +360,7 @@ graph LR
     B -->|this repository| C[corrected image]
 ```
 
-所有文件名和摘要都在 [`editions.manifest.json`](editions.manifest.json) 中，并在 [`roms/README.md`](roms/README.md) 中列出。补丁归档也固定在那里，附有其长度和四个摘要。
+所有文件名和摘要都在 [`editions.manifest.json`](editions.manifest.json) 中，并在 [ROMS.md](ROMS.md) 中列出。补丁归档也固定在那里，附有其长度和四个摘要。
 
 ## 为什么两端都要固定
 
@@ -405,7 +405,7 @@ e5ba9bef71c8ea31
 python3 conformance/against_images.test.py
 ```
 
-当 [`roms/`](roms/) 中有重建版时，它会检查输入和输出的每个固定摘要，检查结果声明无协处理器并带有覆盖该声明的校验和，检查文件头仍位于 `0x7FC0`，检查只有文件头镜像副本发生变动，并检查修正两次得到相同的字节。没有重建版时，它的 11 个测试会跳过并说明原因。CI 在每次推送时运行这两条命令，并在没有镜像时为该次运行添加注释。
+当 [`external/roms/`](ROMS.md) 中有重建版时，它会检查输入和输出的每个固定摘要，检查结果声明无协处理器并带有覆盖该声明的校验和，检查文件头仍位于 `0x7FC0`，检查只有文件头镜像副本发生变动，并检查修正两次得到相同的字节。没有重建版时，它的 11 个测试会跳过并说明原因。CI 在每次推送时运行这两条命令，并在没有镜像时为该次运行添加注释。
 
 [`conformance/hardware.json`](conformance/hardware.json) 存放本仓库固定的两个事实：镜像长度，以及由它推出的大小字节。文件头的其余所有内容都在 `snes-rom-image-python` 中固定。[`conformance/divergences.json`](conformance/divergences.json) 记录了大小字节来自 Nintendo 的规则而不是印刷的表格行，[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) 列出了 3 个尚未解决的问题。
 
@@ -455,4 +455,4 @@ python3 -m conformance.speed
 
 MIT，仅覆盖本仓库中的代码，不涉及其他任何内容。
 
-本仓库不分发任何一个镜像，也无法根据本仓库中的任何内容重建它们。Star Ocean 归其发行商所有，移除 S-DD1 是 neviksti 的工作，英文翻译是 DeJap 的工作。参见 [`roms/README.md`](roms/README.md)。
+本仓库不分发任何一个镜像，也无法根据本仓库中的任何内容重建它们。Star Ocean 归其发行商所有，移除 S-DD1 是 neviksti 的工作，英文翻译是 DeJap 的工作。参见 [ROMS.md](ROMS.md)。

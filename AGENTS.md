@@ -91,6 +91,27 @@ matched either edition. There is no runner and no command. Header reading and
 rewriting, which a test cartridge can exercise, are the work of
 `snes-rom-image-python`, the submodule this member consumes.
 
+## Files kept in `external/`
+
+Everything this member reads and may not ship sits in `external/`, which git
+ignores and Dropbox is told to leave alone, per FAMILY.md's "Where the files a
+member reads are kept". [`artifacts.manifest.json`](artifacts.manifest.json)
+names all 6 by size, CRC32, MD5, SHA-1 and SHA-256:
+
+- `external/roms/`, the game, both patches and the images each patch produces,
+  the links [`editions.manifest.json`](editions.manifest.json) pins and
+  [ROMS.md](ROMS.md) lists. The fix and the verifier read them there, and the
+  rebuilt images still go to `dist/`.
+
+```bash
+python3 -m conformance.external
+python3 -m conformance.external --describe external/<file>
+```
+
+The first says which are here, verified, missing or wrong. The second prints
+the manifest entry for a file being added, which gets its entry in the same
+change.
+
 ## Every gate, in the order to run them
 
 ```bash
@@ -229,8 +250,11 @@ conformance/
   family_*.test.py        the family standard, held as tests, one topic a file
   family_member.py        what this member answers to them
   family_shared.py        what more than one of them reads
+  external.py       which files in external/ are here, verified, missing or wrong
 editions.manifest.json        every filename and four digests per link, and the superseded ones
 snes-rom-image-python/    the header reader, a submodule, with the memory map nested below it
+external/           the game, the patches and the images they produce, never committed
+artifacts.manifest.json  every file in external/, by size and every digest
 ```
 
 ## Things that will bite you

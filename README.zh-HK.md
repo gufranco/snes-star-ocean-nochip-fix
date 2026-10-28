@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2** 個版本，每個映像檔更改 **12** 個位元組，其他地方不變，兩條鏈共 **32** 個固定摘要值，**0** 處不一致，**643** 項測試，**100%** 語句及分支覆蓋率，沒有依賴項
+**2** 個版本，每個映像檔更改 **12** 個位元組，其他地方不變，兩條鏈共 **32** 個固定摘要值，**0** 處不一致，**694** 項測試，**100%** 語句及分支覆蓋率，沒有依賴項
 
 ```python
 import tempfile
@@ -50,7 +50,7 @@ python3 starocean/doctor.py
 
 檔頭讀取器是一個子模組 `snes-rom-image-python`，它使用的記憶體映射是嵌套在其中的另一個子模組 `snes-mapper-python`。從下載 zip 連結取得的原始碼封存檔兩者都不包含，因此那樣的副本無法修正任何東西。如果副本是在沒有 `--recurse-submodules` 的情況下取得，請執行 `git submodule update --init --recursive`。
 
-診斷腳本會報告本機、子模組、清單，以及它在 [`roms/`](roms/) 和 `dist/` 下找到的兩條鏈的每個環節，最後輸出一行結果。提交錯誤報告時，請貼上它的完整輸出。所有檢查通過時以 0 結束，有任何一項不通過時以 1 結束。
+診斷腳本會報告本機、子模組、清單，以及它在 [`external/roms/`](ROMS.md) 和 `dist/` 下找到的兩條鏈的每個環節，最後輸出一行結果。提交錯誤報告時，請貼上它的完整輸出。所有檢查通過時以 0 結束，有任何一項不通過時以 1 結束。
 
 ```
   14 checks, nothing to report
@@ -64,20 +64,20 @@ python3 starocean/doctor.py
 
 ### 命令
 
-檔案由你提供。按照 [`roms/README.md`](roms/README.md) 列出的名稱放入 [`roms/`](roms/)，然後執行：
+檔案由你提供。按照 [ROMS.md](ROMS.md) 列出的名稱放入 [`external/roms/`](ROMS.md)，然後執行：
 
 ```bash
-python3 starocean/verify.py roms dist
-python3 starocean/fix.py roms dist
+python3 starocean/verify.py external/roms dist
+python3 starocean/fix.py external/roms dist
 ```
 
-| 命令                          | 參數                                                    | 作用                                               | 結束碼                                                                           |
-| :---------------------------- | :------------------------------------------------------ | :------------------------------------------------- | :------------------------------------------------------------------------------- |
-| `python3 starocean/verify.py` | `[source] [destination]`，預設為 `roms` 和 `dist`       | 尋找兩條鏈的全部四個環節，逐一報告，不寫入任何東西 | 0 找到的每個檔案都相符，1 找到的某個檔案不相符，2 兩條鏈的檔案都不存在           |
-| `python3 starocean/fix.py`    | `[source] [destination]`，預設為下述的來源目錄和 `dist` | 確認每個重建版，修正它，確認結果，然後寫入         | 0 至少寫入一個映像檔且沒有拒絕任何映像檔，1 有映像檔被拒絕，2 兩個重建版都不存在 |
-| `python3 starocean/doctor.py` | 無                                                      | 報告本機上有甚麼                                   | 0 所有檢查通過，1 有一項不通過                                                   |
+| 命令                          | 參數                                                       | 作用                                               | 結束碼                                                                           |
+| :---------------------------- | :--------------------------------------------------------- | :------------------------------------------------- | :------------------------------------------------------------------------------- |
+| `python3 starocean/verify.py` | `[source] [destination]`，預設為 `external/roms` 和 `dist` | 尋找兩條鏈的全部四個環節，逐一報告，不寫入任何東西 | 0 找到的每個檔案都相符，1 找到的某個檔案不相符，2 兩條鏈的檔案都不存在           |
+| `python3 starocean/fix.py`    | `[source] [destination]`，預設為下述的來源目錄和 `dist`    | 確認每個重建版，修正它，確認結果，然後寫入         | 0 至少寫入一個映像檔且沒有拒絕任何映像檔，1 有映像檔被拒絕，2 兩個重建版都不存在 |
+| `python3 starocean/doctor.py` | 無                                                         | 報告本機上有甚麼                                   | 0 所有檢查通過，1 有一項不通過                                                   |
 
-`fix.py` 沒有收到來源參數時，會從 `STAR_OCEAN_ROM_DIR` 指定的目錄讀取。即使指定的目錄是空的，也照樣使用，不會改用其他目錄，因此路徑打錯時會找不到任何映像檔，而不是找到別處的映像檔。沒有設定該變數時，它會在本副本旁邊的 `roms` 和副本內的 [`roms/`](roms/) 之中，取第一個存在的目錄。`verify.py` 只從參數取得目錄。
+`fix.py` 沒有收到來源參數時，會從 `STAR_OCEAN_ROM_DIR` 指定的目錄讀取。即使指定的目錄是空的，也照樣使用，不會改用其他目錄，因此路徑打錯時會找不到任何映像檔，而不是找到別處的映像檔。沒有設定該變數時，它會在本副本旁邊的 `external/roms` 和副本內的 [`external/roms/`](ROMS.md) 之中，取第一個存在的目錄。`verify.py` 只從參數取得目錄。
 
 ```python
 from starocean import fix, verify
@@ -107,18 +107,18 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### 讀取與修正
 
-| 呼叫                                                  | 作用                                                                                                                                                         | 傳回                |
-| :---------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
-| `look(source=None, catalogue=None, destination=None)` | 尋找每條鏈的每個環節：在 `source` 下尋找 `source`、`patch` 和 `reads`，在 `destination` 下尋找 `writes`。會遍歷子目錄。預設值為 `roms`、`EDITIONS` 和 `dist` | 一個 `Finding` 清單 |
-| `report(findings)`                                    | 每項結果一行，`altered` 或 `corrupt` 的檔案會附上找到的 sha256 的首 16 個十六進位數字                                                                        | 一個字串清單        |
-| `verdict(findings)`                                   | 有任何結果為 `altered` 或 `corrupt` 時為 `WRONG`，否則有任何結果為 `matches` 時為 `SOUND`，否則為 `NOTHING`                                                  | 一個字串            |
-| `confirm(image, edition)`                             | 先檢查長度，再檢查 sha256，然後以 `edition.before` 核對其餘三個摘要值                                                                                        | 該 `edition`        |
-| `correct(image)`                                      | 在每個檔頭鏡像中宣告沒有協處理器及映像檔的實際大小，並重新計算校驗和。不作任何檢查                                                                           | 修正後的位元組      |
-| `apply(image, edition)`                               | 執行 `confirm`、`correct`，然後以 `edition.after` 核對結果的四個摘要值                                                                                       | 修正後的位元組      |
-| `run(edition, source, destination)`                   | 從 `source` 讀取 `edition.reads`，套用修正，並在 `destination` 下寫入 `edition.writes`，有需要時建立該目錄                                                   | 寫入的路徑          |
-| `digests_of(data)`                                    | crc32、md5、sha1 和 sha256，以小寫十六進位表示                                                                                                               | 一個 dict           |
-| `directories(environment=None)`                       | `fix.py` 尋找的位置：`STAR_OCEAN_ROM_DIR` 按路徑分隔符拆分後的每一項，然後是副本旁邊的 `roms`，然後是副本內的 `roms`                                         | 一個路徑 tuple      |
-| `source_directory(environment=None, places=None)`     | 已設定 `STAR_OCEAN_ROM_DIR` 時按原樣使用它，否則取 `places` 中第一個是目錄的項目，否則取副本內的 `roms`                                                      | 一個路徑            |
+| 呼叫                                                  | 作用                                                                                                                                                                  | 傳回                |
+| :---------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
+| `look(source=None, catalogue=None, destination=None)` | 尋找每條鏈的每個環節：在 `source` 下尋找 `source`、`patch` 和 `reads`，在 `destination` 下尋找 `writes`。會遍歷子目錄。預設值為 `external/roms`、`EDITIONS` 和 `dist` | 一個 `Finding` 清單 |
+| `report(findings)`                                    | 每項結果一行，`altered` 或 `corrupt` 的檔案會附上找到的 sha256 的首 16 個十六進位數字                                                                                 | 一個字串清單        |
+| `verdict(findings)`                                   | 有任何結果為 `altered` 或 `corrupt` 時為 `WRONG`，否則有任何結果為 `matches` 時為 `SOUND`，否則為 `NOTHING`                                                           | 一個字串            |
+| `confirm(image, edition)`                             | 先檢查長度，再檢查 sha256，然後以 `edition.before` 核對其餘三個摘要值                                                                                                 | 該 `edition`        |
+| `correct(image)`                                      | 在每個檔頭鏡像中宣告沒有協處理器及映像檔的實際大小，並重新計算校驗和。不作任何檢查                                                                                    | 修正後的位元組      |
+| `apply(image, edition)`                               | 執行 `confirm`、`correct`，然後以 `edition.after` 核對結果的四個摘要值                                                                                                | 修正後的位元組      |
+| `run(edition, source, destination)`                   | 從 `source` 讀取 `edition.reads`，套用修正，並在 `destination` 下寫入 `edition.writes`，有需要時建立該目錄                                                            | 寫入的路徑          |
+| `digests_of(data)`                                    | crc32、md5、sha1 和 sha256，以小寫十六進位表示                                                                                                                        | 一個 dict           |
+| `directories(environment=None)`                       | `fix.py` 尋找的位置：`STAR_OCEAN_ROM_DIR` 按路徑分隔符拆分後的每一項，然後是副本旁邊的 `external/roms`，然後是副本內的 `external/roms`                                | 一個路徑 tuple      |
+| `source_directory(environment=None, places=None)`     | 已設定 `STAR_OCEAN_ROM_DIR` 時按原樣使用它，否則取 `places` 中第一個是目錄的項目，否則取副本內的 `external/roms`                                                      | 一個路徑            |
 
 `look`、`report`、`verdict`、`confirm`、`correct`、`apply` 和 `digests_of` 不寫入任何東西。`run` 是唯一會寫入的呼叫。
 
@@ -360,7 +360,7 @@ graph LR
     B -->|this repository| C[corrected image]
 ```
 
-每個檔案名稱和摘要值都在 [`editions.manifest.json`](editions.manifest.json) 中，並列於 [`roms/README.md`](roms/README.md)。修補檔的封存檔也在那裏固定，連同其長度和四個摘要值。
+每個檔案名稱和摘要值都在 [`editions.manifest.json`](editions.manifest.json) 中，並列於 [ROMS.md](ROMS.md)。修補檔的封存檔也在那裏固定，連同其長度和四個摘要值。
 
 ## 為何兩端都要固定
 
@@ -405,7 +405,7 @@ e5ba9bef71c8ea31
 python3 conformance/against_images.test.py
 ```
 
-當重建版放在 [`roms/`](roms/) 中時，這會檢查輸入和輸出的每個固定摘要值，檢查結果宣告沒有協處理器且帶有涵蓋這項宣告的校驗和，檢查檔頭仍然位於 `0x7FC0`，檢查只有檔頭鏡像有改動，並檢查修正兩次得出相同的位元組。沒有重建版時，它的 11 項測試會略過並說明原因。CI 在每次推送時都會執行這兩個命令，沒有映像檔時會在該次執行上加註。
+當重建版放在 [`external/roms/`](ROMS.md) 中時，這會檢查輸入和輸出的每個固定摘要值，檢查結果宣告沒有協處理器且帶有涵蓋這項宣告的校驗和，檢查檔頭仍然位於 `0x7FC0`，檢查只有檔頭鏡像有改動，並檢查修正兩次得出相同的位元組。沒有重建版時，它的 11 項測試會略過並說明原因。CI 在每次推送時都會執行這兩個命令，沒有映像檔時會在該次執行上加註。
 
 [`conformance/hardware.json`](conformance/hardware.json) 存放本儲存庫固定的兩項事實：映像檔長度，以及由此得出的大小位元組。檔頭的其他所有內容都在 `snes-rom-image-python` 中固定。[`conformance/divergences.json`](conformance/divergences.json) 記錄了大小位元組來自 Nintendo 的規則，而非印刷表格中的某一行；[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) 列出了 3 個尚未解決的問題。
 
@@ -455,4 +455,4 @@ python3 -m conformance.speed
 
 MIT，涵蓋本儲存庫中的程式碼，不涵蓋其他任何東西。
 
-本儲存庫不分發任何一個映像檔，亦無法從本儲存庫的任何內容重建任何一個映像檔。Star Ocean 屬於其發行商，移除 S-DD1 是 neviksti 的成果，英文翻譯則是 DeJap 的成果。參見 [`roms/README.md`](roms/README.md)。
+本儲存庫不分發任何一個映像檔，亦無法從本儲存庫的任何內容重建任何一個映像檔。Star Ocean 屬於其發行商，移除 S-DD1 是 neviksti 的成果，英文翻譯則是 DeJap 的成果。參見 [ROMS.md](ROMS.md)。

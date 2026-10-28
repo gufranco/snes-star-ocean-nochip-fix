@@ -8,7 +8,7 @@ nevikstiによる2つの96 Mbit版Star Oceanリビルドのためのヘッダー
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2**つのエディション、イメージごとに変更されるのは**12**バイトでそれ以外は変更なし、2つのチェーン全体で**32**個の固定ダイジェスト、不一致**0**件、**643**件のテスト、ステートメントとブランチの**100%**カバレッジ、依存関係なし
+**2**つのエディション、イメージごとに変更されるのは**12**バイトでそれ以外は変更なし、2つのチェーン全体で**32**個の固定ダイジェスト、不一致**0**件、**694**件のテスト、ステートメントとブランチの**100%**カバレッジ、依存関係なし
 
 ```python
 import tempfile
@@ -50,7 +50,7 @@ python3 starocean/doctor.py
 
 ヘッダーリーダーはサブモジュール`snes-rom-image-python`で、それが使うメモリマップはその中にネストされたサブモジュール`snes-mapper-python`です。download-zipリンクから得たソースアーカイブにはどちらも含まれないため、そのチェックアウトでは何も修正できません。`--recurse-submodules`なしで作成したチェックアウトでは、`git submodule update --init --recursive`を実行してください。
 
-ドクターは、マシン、サブモジュール、マニフェスト、そして[`roms/`](roms/)と`dist/`の下で見つかった両チェーンのすべてのリンクを報告し、最後に1行を出力します。バグ報告には、その出力全体を貼り付けてください。すべてのチェックに合格すると0で、1つでも合格しないと1で終了します。
+ドクターは、マシン、サブモジュール、マニフェスト、そして[`external/roms/`](ROMS.md)と`dist/`の下で見つかった両チェーンのすべてのリンクを報告し、最後に1行を出力します。バグ報告には、その出力全体を貼り付けてください。すべてのチェックに合格すると0で、1つでも合格しないと1で終了します。
 
 ```
   14 checks, nothing to report
@@ -64,20 +64,20 @@ python3 starocean/doctor.py
 
 ### コマンド
 
-ファイルはご自身で用意してください。[`roms/README.md`](roms/README.md)に記載された名前で[`roms/`](roms/)に置き、次を実行します。
+ファイルはご自身で用意してください。[ROMS.md](ROMS.md)に記載された名前で[`external/roms/`](ROMS.md)に置き、次を実行します。
 
 ```bash
-python3 starocean/verify.py roms dist
-python3 starocean/fix.py roms dist
+python3 starocean/verify.py external/roms dist
+python3 starocean/fix.py external/roms dist
 ```
 
 | コマンド                      | 引数                                                                   | 動作                                                                      | 終了コード                                                                                                        |
 | :---------------------------- | :--------------------------------------------------------------------- | :------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------- |
-| `python3 starocean/verify.py` | `[source] [destination]`、デフォルトは`roms`と`dist`                   | 両チェーンの4つのリンクをすべて探し、それぞれを報告し、何も書き込みません | 0は見つかったすべてのファイルが一致、1は見つかったファイルが一致しない、2はどちらのチェーンのファイルも存在しない |
+| `python3 starocean/verify.py` | `[source] [destination]`、デフォルトは`external/roms`と`dist`          | 両チェーンの4つのリンクをすべて探し、それぞれを報告し、何も書き込みません | 0は見つかったすべてのファイルが一致、1は見つかったファイルが一致しない、2はどちらのチェーンのファイルも存在しない |
 | `python3 starocean/fix.py`    | `[source] [destination]`、デフォルトは後述のソースディレクトリと`dist` | 各リビルドを確認し、修正し、結果を確認して書き込みます                    | 0は少なくとも1つのイメージを書き込み拒否なし、1はイメージが拒否された、2はどちらのリビルドも存在しない            |
 | `python3 starocean/doctor.py` | なし                                                                   | このマシンの状態を報告します                                              | 0はすべてのチェックに合格、1は1つが不合格                                                                         |
 
-`fix.py`にソース引数が渡されない場合は、`STAR_OCEAN_ROM_DIR`が指すディレクトリから読み込みます。指定されたディレクトリは空であっても他に切り替えずに使われるため、パスを打ち間違えると、別の場所のイメージではなく、イメージが見つからないという結果になります。この変数がない場合は、このチェックアウトの隣にある`roms`と、その中の[`roms/`](roms/)のうち、最初に存在するディレクトリを使います。`verify.py`はディレクトリを引数としてのみ受け取ります。
+`fix.py`にソース引数が渡されない場合は、`STAR_OCEAN_ROM_DIR`が指すディレクトリから読み込みます。指定されたディレクトリは空であっても他に切り替えずに使われるため、パスを打ち間違えると、別の場所のイメージではなく、イメージが見つからないという結果になります。この変数がない場合は、このチェックアウトの隣にある`external/roms`と、その中の[`external/roms/`](ROMS.md)のうち、最初に存在するディレクトリを使います。`verify.py`はディレクトリを引数としてのみ受け取ります。
 
 ```python
 from starocean import fix, verify
@@ -107,18 +107,18 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### 読み取りと修正
 
-| 呼び出し                                              | 動作                                                                                                                                                                                            | 戻り値             |
-| :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------- |
-| `look(source=None, catalogue=None, destination=None)` | すべてのチェーンのすべてのリンクを探します。`source`、`patch`、`reads`は`source`の下、`writes`は`destination`の下です。サブディレクトリも走査します。デフォルトは`roms`、`EDITIONS`、`dist`です | `Finding`のリスト  |
-| `report(findings)`                                    | 結果ごとに1行です。`altered`または`corrupt`のファイルには、見つかったsha256の先頭16桁の16進数を付けます                                                                                         | 文字列のリスト     |
-| `verdict(findings)`                                   | いずれかの結果が`altered`または`corrupt`なら`WRONG`、そうでなくいずれかが`matches`なら`SOUND`、それ以外は`NOTHING`                                                                              | 文字列             |
-| `confirm(image, edition)`                             | 長さ、次にsha256、次に残り3つのダイジェストを`edition.before`と照合します                                                                                                                       | `edition`          |
-| `correct(image)`                                      | すべてのヘッダーミラーで、コプロセッサなしとイメージの実際のサイズを宣言し、チェックサムを再計算します。何も検証しません                                                                        | 修正済みのバイト列 |
-| `apply(image, edition)`                               | `confirm`、`correct`を行い、結果の4つのダイジェストを`edition.after`と照合します                                                                                                                | 修正済みのバイト列 |
-| `run(edition, source, destination)`                   | `source`から`edition.reads`を読み込んで適用し、`destination`の下に`edition.writes`を書き込みます。ディレクトリは作成します                                                                      | 書き込んだパス     |
-| `digests_of(data)`                                    | crc32、md5、sha1、sha256を小文字の16進数で返します                                                                                                                                              | dict               |
-| `directories(environment=None)`                       | `fix.py`が探す場所です。パス区切り文字で分割した`STAR_OCEAN_ROM_DIR`の各エントリ、次にチェックアウトの隣の`roms`、次にその中の`roms`です                                                        | パスのタプル       |
-| `source_directory(environment=None, places=None)`     | 設定されていれば`STAR_OCEAN_ROM_DIR`をそのまま、そうでなければ`places`のうち最初のディレクトリ、それもなければチェックアウト内の`roms`                                                          | パス               |
+| 呼び出し                                              | 動作                                                                                                                                                                                                     | 戻り値             |
+| :---------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| `look(source=None, catalogue=None, destination=None)` | すべてのチェーンのすべてのリンクを探します。`source`、`patch`、`reads`は`source`の下、`writes`は`destination`の下です。サブディレクトリも走査します。デフォルトは`external/roms`、`EDITIONS`、`dist`です | `Finding`のリスト  |
+| `report(findings)`                                    | 結果ごとに1行です。`altered`または`corrupt`のファイルには、見つかったsha256の先頭16桁の16進数を付けます                                                                                                  | 文字列のリスト     |
+| `verdict(findings)`                                   | いずれかの結果が`altered`または`corrupt`なら`WRONG`、そうでなくいずれかが`matches`なら`SOUND`、それ以外は`NOTHING`                                                                                       | 文字列             |
+| `confirm(image, edition)`                             | 長さ、次にsha256、次に残り3つのダイジェストを`edition.before`と照合します                                                                                                                                | `edition`          |
+| `correct(image)`                                      | すべてのヘッダーミラーで、コプロセッサなしとイメージの実際のサイズを宣言し、チェックサムを再計算します。何も検証しません                                                                                 | 修正済みのバイト列 |
+| `apply(image, edition)`                               | `confirm`、`correct`を行い、結果の4つのダイジェストを`edition.after`と照合します                                                                                                                         | 修正済みのバイト列 |
+| `run(edition, source, destination)`                   | `source`から`edition.reads`を読み込んで適用し、`destination`の下に`edition.writes`を書き込みます。ディレクトリは作成します                                                                               | 書き込んだパス     |
+| `digests_of(data)`                                    | crc32、md5、sha1、sha256を小文字の16進数で返します                                                                                                                                                       | dict               |
+| `directories(environment=None)`                       | `fix.py`が探す場所です。パス区切り文字で分割した`STAR_OCEAN_ROM_DIR`の各エントリ、次にチェックアウトの隣の`external/roms`、次にその中の`external/roms`です                                               | パスのタプル       |
+| `source_directory(environment=None, places=None)`     | 設定されていれば`STAR_OCEAN_ROM_DIR`をそのまま、そうでなければ`places`のうち最初のディレクトリ、それもなければチェックアウト内の`external/roms`                                                          | パス               |
 
 `look`、`report`、`verdict`、`confirm`、`correct`、`apply`、`digests_of`は何も書き込みません。書き込みを行うのは`run`だけです。
 
@@ -360,7 +360,7 @@ graph LR
     B -->|this repository| C[corrected image]
 ```
 
-すべてのファイル名とダイジェストは[`editions.manifest.json`](editions.manifest.json)にあり、[`roms/README.md`](roms/README.md)に一覧があります。パッチアーカイブもそこに、長さと4つのダイジェストとともに固定されています。
+すべてのファイル名とダイジェストは[`editions.manifest.json`](editions.manifest.json)にあり、[ROMS.md](ROMS.md)に一覧があります。パッチアーカイブもそこに、長さと4つのダイジェストとともに固定されています。
 
 ## 両端を固定する理由
 
@@ -405,7 +405,7 @@ e5ba9bef71c8ea31
 python3 conformance/against_images.test.py
 ```
 
-リビルドが[`roms/`](roms/)にある場合、これは入力と出力の固定ダイジェストをすべて検証し、さらに結果がコプロセッサなしを宣言してそれを含むチェックサムを持つこと、ヘッダーが引き続き`0x7FC0`にあること、ヘッダーミラーだけが変化すること、2回修正しても同じバイト列になることを検証します。リビルドがない場合、11件のテストはスキップされ、その理由を表示します。CIはプッシュのたびに両方のコマンドを実行し、イメージがない場合は実行に注釈を付けます。
+リビルドが[`external/roms/`](ROMS.md)にある場合、これは入力と出力の固定ダイジェストをすべて検証し、さらに結果がコプロセッサなしを宣言してそれを含むチェックサムを持つこと、ヘッダーが引き続き`0x7FC0`にあること、ヘッダーミラーだけが変化すること、2回修正しても同じバイト列になることを検証します。リビルドがない場合、11件のテストはスキップされ、その理由を表示します。CIはプッシュのたびに両方のコマンドを実行し、イメージがない場合は実行に注釈を付けます。
 
 [`conformance/hardware.json`](conformance/hardware.json)は、このリポジトリが固定する2つの事実を保持します。イメージの長さと、そこから導かれるサイズバイトです。ヘッダーに関するそれ以外のすべては`snes-rom-image-python`で固定されています。[`conformance/divergences.json`](conformance/divergences.json)は、サイズバイトが印刷された表の行ではなくNintendoの規則に由来することを記録し、[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)は未解決の3つの事項を挙げています。
 
@@ -455,4 +455,4 @@ python3 -m conformance.speed
 
 MITです。対象はこのリポジトリ内のコードのみで、それ以外は含みません。
 
-どちらのイメージもここでは配布しておらず、このリポジトリ内のものからはどちらも再構築できません。Star Oceanはその発売元に帰属し、S-DD1の除去はnevikstiの成果であり、英語翻訳はDeJapによるものです。[`roms/README.md`](roms/README.md)を参照してください。
+どちらのイメージもここでは配布しておらず、このリポジトリ内のものからはどちらも再構築できません。Star Oceanはその発売元に帰属し、S-DD1の除去はnevikstiの成果であり、英語翻訳はDeJapによるものです。[ROMS.md](ROMS.md)を参照してください。

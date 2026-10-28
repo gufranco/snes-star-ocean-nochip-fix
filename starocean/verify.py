@@ -20,7 +20,7 @@ NOTHING = "nothing"
 SOUND = "sound"
 WRONG = "wrong"
 
-DEFAULT_SOURCE = ROOT / "roms"
+DEFAULT_SOURCE = ROOT / "external" / "roms"
 
 DEFAULT_DESTINATION = ROOT / "dist"
 

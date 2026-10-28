@@ -38,7 +38,7 @@ from starocean import environment  # noqa: E402
 
 MANIFEST = ROOT / "editions.manifest.json"
 
-SOURCE = ROOT / "roms"
+SOURCE = ROOT / "external" / "roms"
 
 DESTINATION = ROOT / "dist"
 

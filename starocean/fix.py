@@ -19,9 +19,9 @@ from starocean.errors import Corrupt, Missing, NotACartridge, Unexpected, Unreco
 
 DIRECTORY_VARIABLE = "STAR_OCEAN_ROM_DIR"
 
-DEFAULT_SOURCE = ROOT / "roms"
+DEFAULT_SOURCE = ROOT / "external" / "roms"
 
-ALONGSIDE = ROOT.parent / "roms"
+ALONGSIDE = ROOT.parent / "external" / "roms"
 
 DEFAULT_DESTINATION = ROOT / "dist"
 

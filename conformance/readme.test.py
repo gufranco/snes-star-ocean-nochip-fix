@@ -180,6 +180,18 @@ class CheckerTest(unittest.TestCase):
         finally:
             del sys.modules["speaking"]
 
+    def test_the_repository_goes_on_the_import_path_when_it_is_missing(self) -> None:
+        # Arrange
+        saved = list(sys.path)
+        self.addCleanup(sys.path.__setitem__, slice(None), saved)
+        sys.path[:] = [one for one in sys.path if one != str(ROOT)]
+
+        # Act
+        cannot_run_here([])
+
+        # Assert
+        self.assertIn(str(ROOT), sys.path)
+
     def test_and_one_that_publishes_nothing_to_say_says_nothing(self) -> None:
         quiet = ModuleType("quiet")
         quiet.why_not = lambda: None  # type: ignore[attr-defined]

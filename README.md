@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2** editions, **12** bytes changed per image and none elsewhere, **32** pinned digests across the two chains, **0** disagreements, **643** tests, **100%** statement and branch coverage, no dependencies
+**2** editions, **12** bytes changed per image and none elsewhere, **32** pinned digests across the two chains, **0** disagreements, **694** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 import tempfile
@@ -50,7 +50,7 @@ python3 starocean/doctor.py
 
 The header reader is a submodule, `snes-rom-image-python`, and the memory map it uses is a submodule nested inside it, `snes-mapper-python`. A source archive from the download-zip link carries neither, so that checkout cannot correct anything. In a checkout made without `--recurse-submodules`, run `git submodule update --init --recursive`.
 
-The doctor reports the machine, the submodule, the manifest and every link of both chains it finds under [`roms/`](roms/) and `dist/`, and ends with one line. Paste its whole output into any bug report. It exits 0 when every check passes and 1 when one does not.
+The doctor reports the machine, the submodule, the manifest and every link of both chains it finds under [`external/roms/`](ROMS.md) and `dist/`, and ends with one line. Paste its whole output into any bug report. It exits 0 when every check passes and 1 when one does not.
 
 ```
   14 checks, nothing to report
@@ -64,20 +64,20 @@ Releases follow [Semantic Versioning](https://semver.org/) and are cut from the 
 
 ### Commands
 
-You supply the files. Put them in [`roms/`](roms/) under the names [`roms/README.md`](roms/README.md) lists, then:
+You supply the files. Put them in [`external/roms/`](ROMS.md) under the names [ROMS.md](ROMS.md) lists, then:
 
 ```bash
-python3 starocean/verify.py roms dist
-python3 starocean/fix.py roms dist
+python3 starocean/verify.py external/roms dist
+python3 starocean/fix.py external/roms dist
 ```
 
 | Command                       | Arguments                                                               | Does                                                                      | Exit codes                                                                                        |
 | :---------------------------- | :---------------------------------------------------------------------- | :------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------ |
-| `python3 starocean/verify.py` | `[source] [destination]`, default `roms` and `dist`                     | Looks for all four links of both chains, reports each, and writes nothing | 0 every file found matches, 1 a file found does not, 2 nothing from either chain is there         |
+| `python3 starocean/verify.py` | `[source] [destination]`, default `external/roms` and `dist`            | Looks for all four links of both chains, reports each, and writes nothing | 0 every file found matches, 1 a file found does not, 2 nothing from either chain is there         |
 | `python3 starocean/fix.py`    | `[source] [destination]`, default the source directory below and `dist` | Confirms each rebuild, corrects it, confirms the result, and writes it    | 0 at least one image written and none refused, 1 an image was refused, 2 neither rebuild is there |
 | `python3 starocean/doctor.py` | none                                                                    | Reports what is on this machine                                           | 0 every check passes, 1 one does not                                                              |
 
-When `fix.py` gets no source argument, it reads from the directory `STAR_OCEAN_ROM_DIR` names. A named directory is used even when it is empty, with no fallback, so a mistyped path finds no image rather than an image somewhere else. Without the variable it takes the first directory that exists out of `roms` beside this checkout and [`roms/`](roms/) inside it. `verify.py` takes its directory only as an argument.
+When `fix.py` gets no source argument, it reads from the directory `STAR_OCEAN_ROM_DIR` names. A named directory is used even when it is empty, with no fallback, so a mistyped path finds no image rather than an image somewhere else. Without the variable it takes the first directory that exists out of `external/roms` beside this checkout and [`external/roms/`](ROMS.md) inside it. `verify.py` takes its directory only as an argument.
 
 ```python
 from starocean import fix, verify
@@ -107,18 +107,18 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### Reading and correcting
 
-| Call                                                  | Does                                                                                                                                                                                   | Returns             |
-| :---------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
-| `look(source=None, catalogue=None, destination=None)` | Looks for every link of every chain: `source`, `patch` and `reads` under `source`, `writes` under `destination`. Subdirectories are walked. Defaults are `roms`, `EDITIONS` and `dist` | A list of `Finding` |
-| `report(findings)`                                    | One line per finding, with the first 16 hex digits of the sha256 found for an `altered` or `corrupt` file                                                                              | A list of strings   |
-| `verdict(findings)`                                   | `WRONG` when any finding is `altered` or `corrupt`, else `SOUND` when any `matches`, else `NOTHING`                                                                                    | A string            |
-| `confirm(image, edition)`                             | Checks the length, then the sha256, then the other three digests against `edition.before`                                                                                              | The `edition`       |
-| `correct(image)`                                      | Declares no coprocessor and the size the image has, in every header mirror, and recomputes the checksum. Checks nothing                                                                | The corrected bytes |
-| `apply(image, edition)`                               | `confirm`, `correct`, then the four digests of the result against `edition.after`                                                                                                      | The corrected bytes |
-| `run(edition, source, destination)`                   | Reads `edition.reads` from `source`, applies it, and writes `edition.writes` under `destination`, making the directory                                                                 | The path written    |
-| `digests_of(data)`                                    | crc32, md5, sha1 and sha256, as lowercase hex                                                                                                                                          | A dict              |
-| `directories(environment=None)`                       | The places `fix.py` looks: each entry of `STAR_OCEAN_ROM_DIR` split on the path separator, then `roms` beside the checkout, then `roms` inside it                                      | A tuple of paths    |
-| `source_directory(environment=None, places=None)`     | `STAR_OCEAN_ROM_DIR` as given when it is set, else the first of `places` that is a directory, else `roms` inside the checkout                                                          | A path              |
+| Call                                                  | Does                                                                                                                                                                                            | Returns             |
+| :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
+| `look(source=None, catalogue=None, destination=None)` | Looks for every link of every chain: `source`, `patch` and `reads` under `source`, `writes` under `destination`. Subdirectories are walked. Defaults are `external/roms`, `EDITIONS` and `dist` | A list of `Finding` |
+| `report(findings)`                                    | One line per finding, with the first 16 hex digits of the sha256 found for an `altered` or `corrupt` file                                                                                       | A list of strings   |
+| `verdict(findings)`                                   | `WRONG` when any finding is `altered` or `corrupt`, else `SOUND` when any `matches`, else `NOTHING`                                                                                             | A string            |
+| `confirm(image, edition)`                             | Checks the length, then the sha256, then the other three digests against `edition.before`                                                                                                       | The `edition`       |
+| `correct(image)`                                      | Declares no coprocessor and the size the image has, in every header mirror, and recomputes the checksum. Checks nothing                                                                         | The corrected bytes |
+| `apply(image, edition)`                               | `confirm`, `correct`, then the four digests of the result against `edition.after`                                                                                                               | The corrected bytes |
+| `run(edition, source, destination)`                   | Reads `edition.reads` from `source`, applies it, and writes `edition.writes` under `destination`, making the directory                                                                          | The path written    |
+| `digests_of(data)`                                    | crc32, md5, sha1 and sha256, as lowercase hex                                                                                                                                                   | A dict              |
+| `directories(environment=None)`                       | The places `fix.py` looks: each entry of `STAR_OCEAN_ROM_DIR` split on the path separator, then `external/roms` beside the checkout, then `external/roms` inside it                             | A tuple of paths    |
+| `source_directory(environment=None, places=None)`     | `STAR_OCEAN_ROM_DIR` as given when it is set, else the first of `places` that is a directory, else `external/roms` inside the checkout                                                          | A path              |
 
 `look`, `report`, `verdict`, `confirm`, `correct`, `apply` and `digests_of` write nothing. `run` is the only call that writes.
 
@@ -360,7 +360,7 @@ graph LR
     B -->|this repository| C[corrected image]
 ```
 
-Every file name and digest is in [`editions.manifest.json`](editions.manifest.json) and is listed in [`roms/README.md`](roms/README.md). The patch archive is pinned there too, with its length and four digests.
+Every file name and digest is in [`editions.manifest.json`](editions.manifest.json) and is listed in [ROMS.md](ROMS.md). The patch archive is pinned there too, with its length and four digests.
 
 ## Why both ends are pinned
 
@@ -405,7 +405,7 @@ e5ba9bef71c8ea31
 python3 conformance/against_images.test.py
 ```
 
-With the rebuilds in [`roms/`](roms/), this checks every pinned digest of the input and of the output, that the result declares no coprocessor and carries a checksum that covers it, that the header still sits at `0x7FC0`, that only header mirrors move, and that correcting twice gives the same bytes. Without them, its 11 tests skip and say why. CI runs both commands on every push, and annotates the run when no image is present.
+With the rebuilds in [`external/roms/`](ROMS.md), this checks every pinned digest of the input and of the output, that the result declares no coprocessor and carries a checksum that covers it, that the header still sits at `0x7FC0`, that only header mirrors move, and that correcting twice gives the same bytes. Without them, its 11 tests skip and say why. CI runs both commands on every push, and annotates the run when no image is present.
 
 [`conformance/hardware.json`](conformance/hardware.json) holds the two facts this repository pins: the image length and the size byte that follows from it. Everything else about a header is pinned in `snes-rom-image-python`. [`conformance/divergences.json`](conformance/divergences.json) records that the size byte comes from Nintendo's rule rather than a printed row, and [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) lists the 3 things not settled.
 
@@ -455,4 +455,4 @@ A weekly job reports when the pinned submodule falls behind its upstream. Moving
 
 MIT, covering the code in this repository and nothing else.
 
-Neither image is distributed here and neither can be reconstructed from anything in this repository. Star Ocean belongs to its publisher, the S-DD1 removal is neviksti's work, and the English translation is DeJap's. See [`roms/README.md`](roms/README.md).
+Neither image is distributed here and neither can be reconstructed from anything in this repository. Star Ocean belongs to its publisher, the S-DD1 removal is neviksti's work, and the English translation is DeJap's. See [ROMS.md](ROMS.md).

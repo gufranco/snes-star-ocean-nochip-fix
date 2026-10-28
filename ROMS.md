@@ -1,12 +1,12 @@
 # ROMs
 
-Nothing in this directory is shared. The game belongs to its publisher, the
+The files go in `external/roms/`, and nothing in that folder is shared. The game belongs to its publisher, the
 S-DD1 removal is neviksti's work and the English translation is DeJap's. No part
 of any of it is carried by this repository, published in the manifest, or
 reconstructible from anything here. What the manifest holds is a name, a length
 and four digests, and a digest reconstructs nothing.
 
-Put copies you already own here and the correction runs. Leave the directory
+Put copies you already own in `external/roms/` and the correction runs. Leave it
 empty and the checks that need one report as skipped rather than as passed, so a
 run that proved nothing never reads as a run that proved something.
 
@@ -24,7 +24,8 @@ earlier.
 
 ## Where they go
 
-Here, keeping the filenames below, or anywhere `STAR_OCEAN_ROM_DIR` points.
+In `external/roms/`, keeping the filenames below, or anywhere
+`STAR_OCEAN_ROM_DIR` points.
 Subdirectories are walked. A named directory wins even when it turns out to be
 empty, because quietly falling back from a path somebody typed turns a typo into
 a run that reports nothing needed doing.
