@@ -6,6 +6,10 @@ from typing import Any, override
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.append(str(ROOT / "snes-rom-image-python"))
+sys.path.append(str(ROOT / "snes-rom-image-python" / "snes-mapper-python"))
+
+from romimage import copier
 
 import starocean
 
@@ -45,9 +49,7 @@ def an_edition(before: bytes, forms: dict[str, Any] | None = None) -> starocean.
 
 
 def pinned(before: bytes) -> dict[str, Any]:
-    headed = starocean.fix.copier.for_sd2snes(
-        starocean.correct(before), starocean.fix.SD2SNES_CHIPSET
-    )
+    headed = copier.for_sd2snes(starocean.correct(before), starocean.fix.SD2SNES_CHIPSET)
     assert len(headed) == WHOLE + 0x200, "the sd2snes form is the image plus a copier header"
     return dict(starocean.digests_of(headed), bytes=len(headed))
 

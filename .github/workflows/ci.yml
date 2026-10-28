@@ -184,7 +184,7 @@ jobs:
             python - <<'PY'
           import hashlib
           import pathlib
-          held = sorted(pathlib.Path("dist").iterdir())
+          held = sorted(one for one in pathlib.Path("dist").rglob("*") if one.is_file())
           print(*(hashlib.sha256(one.read_bytes()).hexdigest() for one in held))
           PY
           }
