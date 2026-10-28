@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2** 个版本，每个镜像改动 **12** 个字节且别处不变，两条链共 **32** 个固定摘要，**0** 处不一致，**694** 个测试，**100%** 语句与分支覆盖率，无依赖
+**2** 个版本，每个镜像改动 **12** 个字节且别处不变，两条链共 **40** 个固定摘要，**0** 处不一致，**701** 个测试，**100%** 语句与分支覆盖率，无依赖
 
 ```python
 import tempfile
@@ -29,7 +29,7 @@ print(verdict(found))
   japanese: source altered, Star Ocean (Japan).sfc (found 455314660dc0a594)
   japanese: patch absent, 96Mbit_SO_JPN.xdelta
   japanese: reads absent, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc
-  japanese: writes absent, star-ocean-jp-nochip.sfc
+  japanese: writes absent, emulator/star-ocean-jp-nochip.sfc
 wrong
 ```
 
@@ -71,11 +71,22 @@ python3 starocean/verify.py external/roms dist
 python3 starocean/fix.py external/roms dist
 ```
 
-| 命令                          | 参数                                                       | 作用                                               | 退出码                                                                 |
-| :---------------------------- | :--------------------------------------------------------- | :------------------------------------------------- | :--------------------------------------------------------------------- |
-| `python3 starocean/verify.py` | `[source] [destination]`，默认为 `external/roms` 和 `dist` | 查找两条链的全部四个环节，逐一报告，不写入任何内容 | 0 找到的每个文件都匹配，1 找到的某个文件不匹配，2 两条链的文件都不存在 |
-| `python3 starocean/fix.py`    | `[source] [destination]`，默认为下文所述的源目录和 `dist`  | 确认每个重建版，加以修正，确认结果，然后写入       | 0 至少写入一个镜像且没有被拒绝的，1 有镜像被拒绝，2 两个重建版都不存在 |
-| `python3 starocean/doctor.py` | 无                                                         | 报告本机上的情况                                   | 0 所有检查都通过，1 有一项未通过                                       |
+| 命令                          | 参数                                                                  | 作用                                                                 | 退出码                                                                 |
+| :---------------------------- | :-------------------------------------------------------------------- | :------------------------------------------------------------------- | :--------------------------------------------------------------------- |
+| `python3 starocean/verify.py` | `[source] [destination]`，默认为 `external/roms` 和 `dist/v<version>` | 查找两条链的每个环节，逐一报告，不写入任何内容                       | 0 找到的每个文件都匹配，1 找到的某个文件不匹配，2 两条链的文件都不存在 |
+| `python3 starocean/fix.py`    | `[source] [destination]`，默认为下文所述的源目录和 `dist/v<version>`  | 确认每个重建版，修正它，确认写出的每种形式，并按设备各写入一个文件夹 | 0 至少写出一个镜像且没有拒绝，1 有镜像被拒绝，2 两个重建版都不存在     |
+| `python3 starocean/doctor.py` | 无                                                                    | 报告本机上的情况                                                     | 0 所有检查都通过，1 有一项未通过                                       |
+
+`fix.py` 把每个修正后的镜像按设备各写一次，写入目标目录下的文件夹：
+
+| 文件夹           | 用于                   | 内容                                                              |
+| :--------------- | :--------------------- | :---------------------------------------------------------------- |
+| `emulator`       | bsnes、snes9x 等模拟器 | 修正后的 `.sfc`。它不声明协处理器，并保留带电池的存档内存         |
+| `supereverdrive` | Super EverDrive        | 与 `emulator` 相同的文件                                          |
+| `sd2snes`        | SD2SNES 和 SD2SNES Pro | 一个 `.smc`：512 字节的空拷贝机头部，后接声明芯片组 `0x45` 的镜像 |
+| `fxpak`          | FXPAK Pro              | 与 `sd2snes` 相同的文件，它运行同一个固件                         |
+
+sd2snes 固件只在芯片组为 `0x43` 或 `0x45` 且文件恰好为 12,583,424 字节时，才这样映射 96 Mbit 的镜像，因此不声明协处理器的 `.sfc` 在那里得不到这种映射。固件源码说明该布局的映射器是为 neviksti 的 Star Ocean 编写的，它也映射头部声明的存档内存。没有 `gamedoctor` 文件夹：Game Doctor 会把存档 RAM 映射到库 `$70` 到 `$7F` 的一部分上，而本镜像在那里存放图形，存档 RAM 应改放在哪里尚未测量，所以 [snes-rom-image-python](https://github.com/gufranco/snes-rom-image-python) 拒绝写出该头部，而不是去猜测。
 
 `fix.py` 没有收到源参数时，会从 `STAR_OCEAN_ROM_DIR` 指定的目录读取。指定的目录即使为空也照样使用，不会改用其他目录，因此路径输错时找不到任何镜像，而不是找到别处的镜像。没有该变量时，它在本检出目录旁的 `external/roms` 和其中的 [`external/roms/`](ROMS.md) 之间取第一个存在的目录。`verify.py` 只通过参数获取目录。
 
@@ -94,11 +105,13 @@ print(verify.main(["nowhere", "nowhere"]))
   japanese: source absent, Star Ocean (Japan).sfc
   japanese: patch absent, 96Mbit_SO_JPN.xdelta
   japanese: reads absent, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc
-  japanese: writes absent, star-ocean-jp-nochip.sfc
+  japanese: writes absent, emulator/star-ocean-jp-nochip.sfc
+  japanese: writes absent, sd2snes/star-ocean-jp-nochip.smc
   english: source absent, Star Ocean (J) T+Eng v1.0 DeJap.sfc
   english: patch absent, 96Mbit_SO_ENG.xdelta
   english: reads absent, Star Ocean (J) T+Eng, SDD1 Patched v1 DeJap, SDD1 v1 Neviksti.sfc
-  english: writes absent, star-ocean-en-nochip.sfc
+  english: writes absent, emulator/star-ocean-en-nochip.sfc
+  english: writes absent, sd2snes/star-ocean-en-nochip.smc
   nothing from the chain was found under nowhere
 2
 ```
@@ -107,18 +120,20 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### 读取与修正
 
-| 调用                                                  | 作用                                                                                                                                                                  | 返回                |
-| :---------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
-| `look(source=None, catalogue=None, destination=None)` | 查找每条链的每个环节：在 `source` 下查找 `source`、`patch` 和 `reads`，在 `destination` 下查找 `writes`。会遍历子目录。默认值为 `external/roms`、`EDITIONS` 和 `dist` | 一个 `Finding` 列表 |
-| `report(findings)`                                    | 每个发现输出一行，对 `altered` 或 `corrupt` 的文件附上所得 sha256 的前 16 个十六进制位                                                                                | 一个字符串列表      |
-| `verdict(findings)`                                   | 任一发现为 `altered` 或 `corrupt` 时返回 `WRONG`，否则任一为 `matches` 时返回 `SOUND`，否则返回 `NOTHING`                                                             | 一个字符串          |
-| `confirm(image, edition)`                             | 依次检查长度、sha256，再将其余三个摘要与 `edition.before` 对照                                                                                                        | 该 `edition`        |
-| `correct(image)`                                      | 在每个文件头镜像中声明无协处理器和镜像的实际大小，并重新计算校验和。不做任何检查                                                                                      | 修正后的字节        |
-| `apply(image, edition)`                               | 执行 `confirm`、`correct`，再将结果的四个摘要与 `edition.after` 对照                                                                                                  | 修正后的字节        |
-| `run(edition, source, destination)`                   | 从 `source` 读取 `edition.reads`，对其执行 apply，并在 `destination` 下写入 `edition.writes`，必要时创建该目录                                                        | 写入的路径          |
-| `digests_of(data)`                                    | crc32、md5、sha1 和 sha256，小写十六进制                                                                                                                              | 一个 dict           |
-| `directories(environment=None)`                       | `fix.py` 查找的位置：先是 `STAR_OCEAN_ROM_DIR` 按路径分隔符拆分后的每一项，然后是检出目录旁的 `external/roms`，最后是其中的 `external/roms`                           | 一个路径元组        |
-| `source_directory(environment=None, places=None)`     | 设置了 `STAR_OCEAN_ROM_DIR` 时原样返回它，否则返回 `places` 中第一个是目录的项，否则返回检出目录中的 `external/roms`                                                  | 一个路径            |
+| 调用                                                  | 作用                                                                                                                                                                                            | 返回                  |
+| :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------- |
+| `look(source=None, catalogue=None, destination=None)` | 查找每条链的每个环节：在 `source` 下查找 `source`、`patch` 和 `reads`，在 `destination` 下的设备文件夹中查找写出的文件。会遍历子目录。默认值为 `external/roms`、`EDITIONS` 和 `dist/v<version>` | 一个 `Finding` 列表   |
+| `report(findings)`                                    | 每个发现输出一行，对 `altered` 或 `corrupt` 的文件附上所得 sha256 的前 16 个十六进制位                                                                                                          | 一个字符串列表        |
+| `verdict(findings)`                                   | 任一发现为 `altered` 或 `corrupt` 时返回 `WRONG`，否则任一为 `matches` 时返回 `SOUND`，否则返回 `NOTHING`                                                                                       | 一个字符串            |
+| `confirm(image, edition)`                             | 依次检查长度、sha256，再将其余三个摘要与 `edition.before` 对照                                                                                                                                  | 该 `edition`          |
+| `correct(image)`                                      | 在每个文件头镜像中声明无协处理器（保留带电池的存档内存）和镜像的实际大小，并重新计算校验和。不做任何检查                                                                                        | 修正后的字节          |
+| `apply(image, edition)`                               | 执行 `confirm`、`correct`，再将结果的四个摘要与 `edition.after` 对照                                                                                                                            | 修正后的字节          |
+| `run(edition, source, destination)`                   | 从 `source` 读取 `edition.reads`，对其执行 apply，并在 `destination` 下写入 `forms_of` 返回的每种形式，必要时创建文件夹                                                                         | `emulator` 文件的路径 |
+| `forms_of(produced, edition)`                         | 每种形式的路径和字节：`emulator` 和 `supereverdrive` 中是修正后的镜像；清单固定了 sd2snes 形式时，`sd2snes` 和 `fxpak` 中是该形式                                                               | 一个二元组列表        |
+| `for_sd2snes(produced, edition)`                      | 写出 sd2snes 形式，并与清单为它固定的四个摘要核对                                                                                                                                               | 该形式的字节          |
+| `digests_of(data)`                                    | crc32、md5、sha1 和 sha256，小写十六进制                                                                                                                                                        | 一个 dict             |
+| `directories(environment=None)`                       | `fix.py` 查找的位置：先是 `STAR_OCEAN_ROM_DIR` 按路径分隔符拆分后的每一项，然后是检出目录旁的 `external/roms`，最后是其中的 `external/roms`                                                     | 一个路径元组          |
+| `source_directory(environment=None, places=None)`     | 设置了 `STAR_OCEAN_ROM_DIR` 时原样返回它，否则返回 `places` 中第一个是目录的项，否则返回检出目录中的 `external/roms`                                                                            | 一个路径              |
 
 `look`、`report`、`verdict`、`confirm`、`correct`、`apply` 和 `digests_of` 不写入任何内容。`run` 是唯一会写入的调用。
 
@@ -189,12 +204,14 @@ japanese True star-ocean-jp-nochip.sfc
   source 6291456 efae37be832d0ea1 False
   patch 3227030 8c3869301f396f44 False
   reads 12582912 e5ba9bef71c8ea31 False
-  writes 12582912 4656c58a296b8901 True
+  writes 12582912 f43b189242e3cca9 True
+  writes 12583424 7d01567db2bb6eba True
 english True star-ocean-en-nochip.sfc
   source 6291456 504050fcbcf1b676 False
   patch 2869793 83b209ef73241fa3 False
   reads 12582912 1bcb3b8b58f19a91 False
-  writes 12582912 3f0af092ae356444 True
+  writes 12582912 6c9e1dbeefc58201 True
+  writes 12583424 24ef02d3c4aa12c0 True
 <Patch Star Ocean no S-DD1/96Mbit hack 1.0, by neviksti>
 The same patch on the DeJap English translation. The two are not interchangeable.
 ```
@@ -319,7 +336,7 @@ Star Ocean 以 S-DD1 电路板发行，该芯片在数据传往主机的途中�
 
 | 字段           | 当前值                     | 应为                                        |
 | :------------- | :------------------------- | :------------------------------------------ |
-| 芯片组         | `0x45`，带存档内存的 S-DD1 | `0x00`，无协处理器                          |
+| 芯片组         | `0x45`，带存档内存的 S-DD1 | `0x02`，无协处理器，带电池的存档内存        |
 | 声明大小       | `0x0D`，8 MB               | `0x0E`，16 MB，能容纳 12 MB 的最小的 2 的幂 |
 | 校验和及其补码 | 覆盖旧字段                 | 覆盖新字段                                  |
 
@@ -376,14 +393,14 @@ graph LR
 
 | 镜像副本内偏移 | 字段       | 修改前 | 修改后   |
 | :------------- | :--------- | :----- | :------- |
-| `0x16`         | 芯片组     | `0x45` | `0x00`   |
+| `0x16`         | 芯片组     | `0x45` | `0x02`   |
 | `0x17`         | 声明大小   | `0x0D` | `0x0E`   |
 | `0x1C`、`0x1D` | 校验和补码 | 旧值   | 重新计算 |
 | `0x1E`、`0x1F` | 校验和     | 旧值   | 重新计算 |
 
 有一个测试断言每个变动的字节都位于文件头镜像副本之内，并且对已修正的镜像再修正一次不会改变任何内容。
 
-清单还在 `supersedes` 下记录了本工具在 2026-08-25 之前写出的摘要。那些镜像带有的校验和是按一条规则计算的，而该规则对长度不是 2 的幂的情况是错误的。与这些摘要匹配的镜像落后一个修订版：请对重建版重新运行修正。
+清单还在 `supersedes` 下按从新到旧记录了两个较早修订版的摘要。2026-10-28 之前，本工具声明芯片组 `0x00`，连同 S-DD1 一起去掉了电池，只为声明了电池的卡带保存存档 RAM 的模拟器因此不再保存存档。2026-08-25 之前，它还按一条对长度不是 2 的幂的情况有误的规则计算校验和。与其中任一匹配的镜像都已过时：请对重建版重新运行修正。
 
 ```python
 from starocean import named
@@ -396,7 +413,7 @@ print(japanese.after["sha256"][:16])
 
 ```
 e5ba9bef71c8ea31
-4656c58a296b8901
+f43b189242e3cca9
 ```
 
 ## 结果是否正确

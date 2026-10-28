@@ -126,7 +126,8 @@ class StateTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            [one.path.parent for one in found], [self.where, self.where, self.where, into]
+            [one.path.parent for one in found],
+            [self.where, self.where, self.where, into / starocean.EMULATOR],
         )
 
     def test_a_file_this_repository_makes_is_never_looked_for_among_the_sources(self) -> None:
@@ -143,8 +144,8 @@ class StateTest(unittest.TestCase):
     def test_a_produced_file_is_looked_for_where_it_would_be_written(self) -> None:
         # Arrange
         into = self.where / "out"
-        into.mkdir()
-        (into / "writes.sfc").write_bytes(WRITES)
+        (into / starocean.EMULATOR).mkdir(parents=True)
+        (into / starocean.EMULATOR / "writes.sfc").write_bytes(WRITES)
 
         # Act
         found = states(self.where, into)
@@ -350,8 +351,8 @@ class MainTest(unittest.TestCase):
     def test_a_second_argument_names_where_produced_files_are_looked_for(self) -> None:
         # Arrange
         into = self.where / "out"
-        into.mkdir()
-        (into / "writes.sfc").write_bytes(WRITES)
+        (into / starocean.EMULATOR).mkdir(parents=True)
+        (into / starocean.EMULATOR / "writes.sfc").write_bytes(WRITES)
 
         # Act
         code = verify.main([str(self.where), str(into)], (EDITION,))

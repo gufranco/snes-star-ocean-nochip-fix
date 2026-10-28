@@ -8,7 +8,7 @@ nevikstiによる2つの96 Mbit版Star Oceanリビルドのためのヘッダー
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2**つのエディション、イメージごとに変更されるのは**12**バイトでそれ以外は変更なし、2つのチェーン全体で**32**個の固定ダイジェスト、不一致**0**件、**694**件のテスト、ステートメントとブランチの**100%**カバレッジ、依存関係なし
+**2**つのエディション、イメージごとに変更されるのは**12**バイトでそれ以外は変更なし、2つのチェーン全体で**40**個の固定ダイジェスト、不一致**0**件、**701**件のテスト、ステートメントとブランチの**100%**カバレッジ、依存関係なし
 
 ```python
 import tempfile
@@ -29,7 +29,7 @@ print(verdict(found))
   japanese: source altered, Star Ocean (Japan).sfc (found 455314660dc0a594)
   japanese: patch absent, 96Mbit_SO_JPN.xdelta
   japanese: reads absent, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc
-  japanese: writes absent, star-ocean-jp-nochip.sfc
+  japanese: writes absent, emulator/star-ocean-jp-nochip.sfc
 wrong
 ```
 
@@ -71,11 +71,22 @@ python3 starocean/verify.py external/roms dist
 python3 starocean/fix.py external/roms dist
 ```
 
-| コマンド                      | 引数                                                                   | 動作                                                                      | 終了コード                                                                                                        |
-| :---------------------------- | :--------------------------------------------------------------------- | :------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------- |
-| `python3 starocean/verify.py` | `[source] [destination]`、デフォルトは`external/roms`と`dist`          | 両チェーンの4つのリンクをすべて探し、それぞれを報告し、何も書き込みません | 0は見つかったすべてのファイルが一致、1は見つかったファイルが一致しない、2はどちらのチェーンのファイルも存在しない |
-| `python3 starocean/fix.py`    | `[source] [destination]`、デフォルトは後述のソースディレクトリと`dist` | 各リビルドを確認し、修正し、結果を確認して書き込みます                    | 0は少なくとも1つのイメージを書き込み拒否なし、1はイメージが拒否された、2はどちらのリビルドも存在しない            |
-| `python3 starocean/doctor.py` | なし                                                                   | このマシンの状態を報告します                                              | 0はすべてのチェックに合格、1は1つが不合格                                                                         |
+| コマンド                      | 引数                                                                              | 動作                                                                                              | 終了コード                                                                                                        |
+| :---------------------------- | :-------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------- |
+| `python3 starocean/verify.py` | `[source] [destination]`、デフォルトは`external/roms`と`dist/v<version>`          | 両チェーンのすべてのリンクを探し、それぞれを報告し、何も書き込みません                            | 0は見つかったすべてのファイルが一致、1は見つかったファイルが一致しない、2はどちらのチェーンのファイルも存在しない |
+| `python3 starocean/fix.py`    | `[source] [destination]`、デフォルトは下記のソースディレクトリと`dist/v<version>` | 各リビルドを確認して修正し、書き出すすべての形を確認して、機器ごとに1つのフォルダーへ書き出します | 0は少なくとも1つのイメージを書き出し拒否なし、1はイメージが拒否された、2はどちらのリビルドも存在しない            |
+| `python3 starocean/doctor.py` | なし                                                                              | このマシンの状態を報告します                                                                      | 0はすべてのチェックに合格、1は1つが不合格                                                                         |
+
+`fix.py`は修正した各イメージを、出力先の下の機器ごとのフォルダーに1回ずつ書き出します。
+
+| フォルダー       | 対象                              | 中身                                                                                           |
+| :--------------- | :-------------------------------- | :--------------------------------------------------------------------------------------------- |
+| `emulator`       | bsnes、snes9xなどのエミュレーター | 修正済みの`.sfc`です。コプロセッサを宣言せず、バッテリーバックアップのセーブメモリーは残します |
+| `supereverdrive` | Super EverDrive                   | `emulator`と同じファイルです                                                                   |
+| `sd2snes`        | SD2SNESとSD2SNES Pro              | `.smc`です。空の512バイトのコピー機ヘッダーと、チップセット`0x45`を宣言するイメージです        |
+| `fxpak`          | FXPAK Pro                         | `sd2snes`と同じファイルです。同じファームウェアで動きます                                      |
+
+sd2snesファームウェアがこのような96 Mbitのイメージをマップするのは、チップセットが`0x43`または`0x45`で、ファイルがちょうど12,583,424バイトのときだけです。そのため、コプロセッサを宣言しない`.sfc`はそこではこのマップになりません。ファームウェアのソースは、このレイアウトのマッパーをneviksti氏のStar Ocean向けとしており、ヘッダーが宣言するセーブメモリーもマップします。`gamedoctor`フォルダーはありません。Game Doctorはバンク`$70`から`$7F`の一部にセーブRAMを割り当てますが、このイメージはそこにグラフィックを置いており、セーブRAMを代わりにどこへ置くかはまだ測定されていないため、[snes-rom-image-python](https://github.com/gufranco/snes-rom-image-python)は推測せずにそのヘッダーの書き出しを拒否します。
 
 `fix.py`にソース引数が渡されない場合は、`STAR_OCEAN_ROM_DIR`が指すディレクトリから読み込みます。指定されたディレクトリは空であっても他に切り替えずに使われるため、パスを打ち間違えると、別の場所のイメージではなく、イメージが見つからないという結果になります。この変数がない場合は、このチェックアウトの隣にある`external/roms`と、その中の[`external/roms/`](ROMS.md)のうち、最初に存在するディレクトリを使います。`verify.py`はディレクトリを引数としてのみ受け取ります。
 
@@ -94,11 +105,13 @@ print(verify.main(["nowhere", "nowhere"]))
   japanese: source absent, Star Ocean (Japan).sfc
   japanese: patch absent, 96Mbit_SO_JPN.xdelta
   japanese: reads absent, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc
-  japanese: writes absent, star-ocean-jp-nochip.sfc
+  japanese: writes absent, emulator/star-ocean-jp-nochip.sfc
+  japanese: writes absent, sd2snes/star-ocean-jp-nochip.smc
   english: source absent, Star Ocean (J) T+Eng v1.0 DeJap.sfc
   english: patch absent, 96Mbit_SO_ENG.xdelta
   english: reads absent, Star Ocean (J) T+Eng, SDD1 Patched v1 DeJap, SDD1 v1 Neviksti.sfc
-  english: writes absent, star-ocean-en-nochip.sfc
+  english: writes absent, emulator/star-ocean-en-nochip.sfc
+  english: writes absent, sd2snes/star-ocean-en-nochip.smc
   nothing from the chain was found under nowhere
 2
 ```
@@ -107,18 +120,20 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### 読み取りと修正
 
-| 呼び出し                                              | 動作                                                                                                                                                                                                     | 戻り値             |
-| :---------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------- |
-| `look(source=None, catalogue=None, destination=None)` | すべてのチェーンのすべてのリンクを探します。`source`、`patch`、`reads`は`source`の下、`writes`は`destination`の下です。サブディレクトリも走査します。デフォルトは`external/roms`、`EDITIONS`、`dist`です | `Finding`のリスト  |
-| `report(findings)`                                    | 結果ごとに1行です。`altered`または`corrupt`のファイルには、見つかったsha256の先頭16桁の16進数を付けます                                                                                                  | 文字列のリスト     |
-| `verdict(findings)`                                   | いずれかの結果が`altered`または`corrupt`なら`WRONG`、そうでなくいずれかが`matches`なら`SOUND`、それ以外は`NOTHING`                                                                                       | 文字列             |
-| `confirm(image, edition)`                             | 長さ、次にsha256、次に残り3つのダイジェストを`edition.before`と照合します                                                                                                                                | `edition`          |
-| `correct(image)`                                      | すべてのヘッダーミラーで、コプロセッサなしとイメージの実際のサイズを宣言し、チェックサムを再計算します。何も検証しません                                                                                 | 修正済みのバイト列 |
-| `apply(image, edition)`                               | `confirm`、`correct`を行い、結果の4つのダイジェストを`edition.after`と照合します                                                                                                                         | 修正済みのバイト列 |
-| `run(edition, source, destination)`                   | `source`から`edition.reads`を読み込んで適用し、`destination`の下に`edition.writes`を書き込みます。ディレクトリは作成します                                                                               | 書き込んだパス     |
-| `digests_of(data)`                                    | crc32、md5、sha1、sha256を小文字の16進数で返します                                                                                                                                                       | dict               |
-| `directories(environment=None)`                       | `fix.py`が探す場所です。パス区切り文字で分割した`STAR_OCEAN_ROM_DIR`の各エントリ、次にチェックアウトの隣の`external/roms`、次にその中の`external/roms`です                                               | パスのタプル       |
-| `source_directory(environment=None, places=None)`     | 設定されていれば`STAR_OCEAN_ROM_DIR`をそのまま、そうでなければ`places`のうち最初のディレクトリ、それもなければチェックアウト内の`external/roms`                                                          | パス               |
+| 呼び出し                                              | 動作                                                                                                                                                                                                                                                | 戻り値                     |
+| :---------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------- |
+| `look(source=None, catalogue=None, destination=None)` | すべてのチェーンのすべてのリンクを探します。`source`、`patch`、`reads`は`source`の下、書き出したファイルは`destination`の下の機器ごとのフォルダーです。サブディレクトリも走査します。デフォルトは`external/roms`、`EDITIONS`、`dist/v<version>`です | `Finding`のリスト          |
+| `report(findings)`                                    | 結果ごとに1行です。`altered`または`corrupt`のファイルには、見つかったsha256の先頭16桁の16進数を付けます                                                                                                                                             | 文字列のリスト             |
+| `verdict(findings)`                                   | いずれかの結果が`altered`または`corrupt`なら`WRONG`、そうでなくいずれかが`matches`なら`SOUND`、それ以外は`NOTHING`                                                                                                                                  | 文字列                     |
+| `confirm(image, edition)`                             | 長さ、次にsha256、次に残り3つのダイジェストを`edition.before`と照合します                                                                                                                                                                           | `edition`                  |
+| `correct(image)`                                      | すべてのヘッダーミラーで、バッテリーバックアップのセーブメモリーを残したままコプロセッサなしとイメージの実際のサイズを宣言し、チェックサムを再計算します。何も検証しません                                                                          | 修正済みのバイト列         |
+| `apply(image, edition)`                               | `confirm`、`correct`を行い、結果の4つのダイジェストを`edition.after`と照合します                                                                                                                                                                    | 修正済みのバイト列         |
+| `run(edition, source, destination)`                   | `source`から`edition.reads`を読み込んで適用し、`forms_of`が返すすべての形を`destination`の下に書き込みます。フォルダーは作成します                                                                                                                  | `emulator`のファイルのパス |
+| `forms_of(produced, edition)`                         | 各形のパスとバイト列です。`emulator`と`supereverdrive`には修正済みのイメージ、マニフェストが固定している場合は`sd2snes`と`fxpak`にsd2snes向けの形です                                                                                               | ペアのリスト               |
+| `for_sd2snes(produced, edition)`                      | sd2snes向けの形を書き出し、マニフェストが固定する4つのダイジェストと照合します                                                                                                                                                                      | その形のバイト列           |
+| `digests_of(data)`                                    | crc32、md5、sha1、sha256を小文字の16進数で返します                                                                                                                                                                                                  | dict                       |
+| `directories(environment=None)`                       | `fix.py`が探す場所です。パス区切り文字で分割した`STAR_OCEAN_ROM_DIR`の各エントリ、次にチェックアウトの隣の`external/roms`、次にその中の`external/roms`です                                                                                          | パスのタプル               |
+| `source_directory(environment=None, places=None)`     | 設定されていれば`STAR_OCEAN_ROM_DIR`をそのまま、そうでなければ`places`のうち最初のディレクトリ、それもなければチェックアウト内の`external/roms`                                                                                                     | パス                       |
 
 `look`、`report`、`verdict`、`confirm`、`correct`、`apply`、`digests_of`は何も書き込みません。書き込みを行うのは`run`だけです。
 
@@ -189,12 +204,14 @@ japanese True star-ocean-jp-nochip.sfc
   source 6291456 efae37be832d0ea1 False
   patch 3227030 8c3869301f396f44 False
   reads 12582912 e5ba9bef71c8ea31 False
-  writes 12582912 4656c58a296b8901 True
+  writes 12582912 f43b189242e3cca9 True
+  writes 12583424 7d01567db2bb6eba True
 english True star-ocean-en-nochip.sfc
   source 6291456 504050fcbcf1b676 False
   patch 2869793 83b209ef73241fa3 False
   reads 12582912 1bcb3b8b58f19a91 False
-  writes 12582912 3f0af092ae356444 True
+  writes 12582912 6c9e1dbeefc58201 True
+  writes 12583424 24ef02d3c4aa12c0 True
 <Patch Star Ocean no S-DD1/96Mbit hack 1.0, by neviksti>
 The same patch on the DeJap English translation. The two are not interchangeable.
 ```
@@ -317,11 +334,11 @@ nevikstiが掲げる目的は実機です。Game Doctor SF7などのバックア
 
 Star OceanはS-DD1基板で発売され、このチップがコンソールへ渡る途中でグラフィックスを展開していました。nevikstiのパッチ適用後、データはすでに展開されています。それでも両方のリビルドは、ヘッダーでS-DD1を宣言したままです。
 
-| フィールド         | 現在の値                      | 正しい値                                        |
-| :----------------- | :---------------------------- | :---------------------------------------------- |
-| Chipset            | `0x45`、セーブメモリ付きS-DD1 | `0x00`、コプロセッサなし                        |
-| 宣言サイズ         | `0x0D`、8メガバイト           | `0x0E`、16メガバイト。12を収める最初の2のべき乗 |
-| チェックサムと補数 | 古いフィールドが対象          | 新しいフィールドが対象                          |
+| フィールド         | 現在の値                      | 正しい値                                               |
+| :----------------- | :---------------------------- | :----------------------------------------------------- |
+| Chipset            | `0x45`、セーブメモリ付きS-DD1 | `0x02`、コプロセッサなし、バッテリー付きセーブメモリー |
+| 宣言サイズ         | `0x0D`、8メガバイト           | `0x0E`、16メガバイト。12を収める最初の2のべき乗        |
+| チェックサムと補数 | 古いフィールドが対象          | 新しいフィールドが対象                                 |
 
 サイズフィールドは2のべき乗を保持しますが、12メガバイトは2のべき乗ではありません。そのためリビルドは、自身の長さと一度も一致したことのない宣言を受け継いでいました。
 
@@ -376,14 +393,14 @@ graph LR
 
 | ミラー内のオフセット | フィールド       | 変更前 | 変更後 |
 | :------------------- | :--------------- | :----- | :----- |
-| `0x16`               | Chipset          | `0x45` | `0x00` |
+| `0x16`               | Chipset          | `0x45` | `0x02` |
 | `0x17`               | 宣言サイズ       | `0x0D` | `0x0E` |
 | `0x1C`、`0x1D`       | チェックサム補数 | 旧値   | 再計算 |
 | `0x1E`、`0x1F`       | チェックサム     | 旧値   | 再計算 |
 
 変化するすべてのバイトがヘッダーミラーの内側にあることと、修正済みイメージを再度修正しても何も変わらないことを、テストで検証しています。
 
-マニフェストは`supersedes`の下に、2026-08-25より前にこのツールが書き込んだダイジェストも記録しています。それらのイメージのチェックサムは、2のべき乗でない長さに対して誤っていた規則で計算されています。それらに一致するイメージは1リビジョン古いものです。リビルドに対してもう一度修正を実行してください。
+マニフェストは`supersedes`の下に、それ以前の2つのリビジョンのダイジェストを新しい順に記録しています。2026-10-28まで、このツールはチップセット`0x00`を宣言しており、S-DD1と一緒にバッテリーも取り除いていたため、宣言されたバッテリーがあるときだけセーブRAMを保存するエミュレーターはセーブを保存しなくなっていました。2026-08-25までは、2のべき乗でない長さに対して誤っていた規則でチェックサムも計算していました。どちらかに一致するイメージは古いものです。リビルドに対してもう一度修正を実行してください。
 
 ```python
 from starocean import named
@@ -396,7 +413,7 @@ print(japanese.after["sha256"][:16])
 
 ```
 e5ba9bef71c8ea31
-4656c58a296b8901
+f43b189242e3cca9
 ```
 
 ## 正しいかどうか

@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**2** editions, **12** bytes changed per image and none elsewhere, **32** pinned digests across the two chains, **0** disagreements, **694** tests, **100%** statement and branch coverage, no dependencies
+**2** editions, **12** bytes changed per image and none elsewhere, **40** pinned digests across the two chains, **0** disagreements, **701** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 import tempfile
@@ -29,7 +29,7 @@ print(verdict(found))
   japanese: source altered, Star Ocean (Japan).sfc (found 455314660dc0a594)
   japanese: patch absent, 96Mbit_SO_JPN.xdelta
   japanese: reads absent, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc
-  japanese: writes absent, star-ocean-jp-nochip.sfc
+  japanese: writes absent, emulator/star-ocean-jp-nochip.sfc
 wrong
 ```
 
@@ -71,11 +71,22 @@ python3 starocean/verify.py external/roms dist
 python3 starocean/fix.py external/roms dist
 ```
 
-| Command                       | Arguments                                                               | Does                                                                      | Exit codes                                                                                        |
-| :---------------------------- | :---------------------------------------------------------------------- | :------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------ |
-| `python3 starocean/verify.py` | `[source] [destination]`, default `external/roms` and `dist`            | Looks for all four links of both chains, reports each, and writes nothing | 0 every file found matches, 1 a file found does not, 2 nothing from either chain is there         |
-| `python3 starocean/fix.py`    | `[source] [destination]`, default the source directory below and `dist` | Confirms each rebuild, corrects it, confirms the result, and writes it    | 0 at least one image written and none refused, 1 an image was refused, 2 neither rebuild is there |
-| `python3 starocean/doctor.py` | none                                                                    | Reports what is on this machine                                           | 0 every check passes, 1 one does not                                                              |
+| Command                       | Arguments                                                                          | Does                                                                                                | Exit codes                                                                                        |
+| :---------------------------- | :--------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
+| `python3 starocean/verify.py` | `[source] [destination]`, default `external/roms` and `dist/v<version>`            | Looks for every link of both chains, reports each, and writes nothing                               | 0 every file found matches, 1 a file found does not, 2 nothing from either chain is there         |
+| `python3 starocean/fix.py`    | `[source] [destination]`, default the source directory below and `dist/v<version>` | Confirms each rebuild, corrects it, confirms every form it writes, and writes one folder per device | 0 at least one image written and none refused, 1 an image was refused, 2 neither rebuild is there |
+| `python3 starocean/doctor.py` | none                                                                               | Reports what is on this machine                                                                     | 0 every check passes, 1 one does not                                                              |
+
+`fix.py` writes each corrected image once per device, into folders under the destination:
+
+| Folder           | For                               | What it holds                                                                             |
+| :--------------- | :-------------------------------- | :---------------------------------------------------------------------------------------- |
+| `emulator`       | bsnes, snes9x and other emulators | The corrected `.sfc`. It declares no coprocessor and keeps the battery-backed save memory |
+| `supereverdrive` | Super EverDrive                   | The same file as `emulator`                                                               |
+| `sd2snes`        | SD2SNES and SD2SNES Pro           | A `.smc`: an empty 512 byte copier header, then the image declaring chipset `0x45`        |
+| `fxpak`          | FXPAK Pro                         | The same file as `sd2snes`. It runs the same firmware                                     |
+
+The sd2snes firmware maps a 96 Mbit image like this one only when the chipset is `0x43` or `0x45` and the file is exactly 12,583,424 bytes, so the `.sfc` that declares no coprocessor does not get that map there. Its source names that mapper as written for neviksti's Star Ocean, and it maps the save memory the header declares. There is no `gamedoctor` folder: a Game Doctor maps save RAM over part of banks `$70` to `$7F`, where this image keeps graphics, and where its save RAM belongs instead has not been measured, so [snes-rom-image-python](https://github.com/gufranco/snes-rom-image-python) refuses to write that header rather than guess.
 
 When `fix.py` gets no source argument, it reads from the directory `STAR_OCEAN_ROM_DIR` names. A named directory is used even when it is empty, with no fallback, so a mistyped path finds no image rather than an image somewhere else. Without the variable it takes the first directory that exists out of `external/roms` beside this checkout and [`external/roms/`](ROMS.md) inside it. `verify.py` takes its directory only as an argument.
 
@@ -94,11 +105,13 @@ print(verify.main(["nowhere", "nowhere"]))
   japanese: source absent, Star Ocean (Japan).sfc
   japanese: patch absent, 96Mbit_SO_JPN.xdelta
   japanese: reads absent, Star Ocean (J) SDD1 Patched (Hack) v1 Neviksti.sfc
-  japanese: writes absent, star-ocean-jp-nochip.sfc
+  japanese: writes absent, emulator/star-ocean-jp-nochip.sfc
+  japanese: writes absent, sd2snes/star-ocean-jp-nochip.smc
   english: source absent, Star Ocean (J) T+Eng v1.0 DeJap.sfc
   english: patch absent, 96Mbit_SO_ENG.xdelta
   english: reads absent, Star Ocean (J) T+Eng, SDD1 Patched v1 DeJap, SDD1 v1 Neviksti.sfc
-  english: writes absent, star-ocean-en-nochip.sfc
+  english: writes absent, emulator/star-ocean-en-nochip.sfc
+  english: writes absent, sd2snes/star-ocean-en-nochip.smc
   nothing from the chain was found under nowhere
 2
 ```
@@ -107,18 +120,20 @@ print(verify.main(["nowhere", "nowhere"]))
 
 ### Reading and correcting
 
-| Call                                                  | Does                                                                                                                                                                                            | Returns             |
-| :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
-| `look(source=None, catalogue=None, destination=None)` | Looks for every link of every chain: `source`, `patch` and `reads` under `source`, `writes` under `destination`. Subdirectories are walked. Defaults are `external/roms`, `EDITIONS` and `dist` | A list of `Finding` |
-| `report(findings)`                                    | One line per finding, with the first 16 hex digits of the sha256 found for an `altered` or `corrupt` file                                                                                       | A list of strings   |
-| `verdict(findings)`                                   | `WRONG` when any finding is `altered` or `corrupt`, else `SOUND` when any `matches`, else `NOTHING`                                                                                             | A string            |
-| `confirm(image, edition)`                             | Checks the length, then the sha256, then the other three digests against `edition.before`                                                                                                       | The `edition`       |
-| `correct(image)`                                      | Declares no coprocessor and the size the image has, in every header mirror, and recomputes the checksum. Checks nothing                                                                         | The corrected bytes |
-| `apply(image, edition)`                               | `confirm`, `correct`, then the four digests of the result against `edition.after`                                                                                                               | The corrected bytes |
-| `run(edition, source, destination)`                   | Reads `edition.reads` from `source`, applies it, and writes `edition.writes` under `destination`, making the directory                                                                          | The path written    |
-| `digests_of(data)`                                    | crc32, md5, sha1 and sha256, as lowercase hex                                                                                                                                                   | A dict              |
-| `directories(environment=None)`                       | The places `fix.py` looks: each entry of `STAR_OCEAN_ROM_DIR` split on the path separator, then `external/roms` beside the checkout, then `external/roms` inside it                             | A tuple of paths    |
-| `source_directory(environment=None, places=None)`     | `STAR_OCEAN_ROM_DIR` as given when it is set, else the first of `places` that is a directory, else `external/roms` inside the checkout                                                          | A path              |
+| Call                                                  | Does                                                                                                                                                                                                                                        | Returns                         |
+| :---------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
+| `look(source=None, catalogue=None, destination=None)` | Looks for every link of every chain: `source`, `patch` and `reads` under `source`, the written files in their device folders under `destination`. Subdirectories are walked. Defaults are `external/roms`, `EDITIONS` and `dist/v<version>` | A list of `Finding`             |
+| `report(findings)`                                    | One line per finding, with the first 16 hex digits of the sha256 found for an `altered` or `corrupt` file                                                                                                                                   | A list of strings               |
+| `verdict(findings)`                                   | `WRONG` when any finding is `altered` or `corrupt`, else `SOUND` when any `matches`, else `NOTHING`                                                                                                                                         | A string                        |
+| `confirm(image, edition)`                             | Checks the length, then the sha256, then the other three digests against `edition.before`                                                                                                                                                   | The `edition`                   |
+| `correct(image)`                                      | Declares no coprocessor, keeping the battery-backed save memory, and the size the image has, in every header mirror, and recomputes the checksum. Checks nothing                                                                            | The corrected bytes             |
+| `apply(image, edition)`                               | `confirm`, `correct`, then the four digests of the result against `edition.after`                                                                                                                                                           | The corrected bytes             |
+| `run(edition, source, destination)`                   | Reads `edition.reads` from `source`, applies it, and writes every form `forms_of` returns under `destination`, making the folders                                                                                                           | The path of the `emulator` file |
+| `forms_of(produced, edition)`                         | The path and bytes of each form: the corrected image in `emulator` and `supereverdrive`, and, when the manifest pins one, the sd2snes form in `sd2snes` and `fxpak`                                                                         | A list of pairs                 |
+| `for_sd2snes(produced, edition)`                      | Writes the sd2snes form and checks it against the four digests the manifest pins for it                                                                                                                                                     | The form's bytes                |
+| `digests_of(data)`                                    | crc32, md5, sha1 and sha256, as lowercase hex                                                                                                                                                                                               | A dict                          |
+| `directories(environment=None)`                       | The places `fix.py` looks: each entry of `STAR_OCEAN_ROM_DIR` split on the path separator, then `external/roms` beside the checkout, then `external/roms` inside it                                                                         | A tuple of paths                |
+| `source_directory(environment=None, places=None)`     | `STAR_OCEAN_ROM_DIR` as given when it is set, else the first of `places` that is a directory, else `external/roms` inside the checkout                                                                                                      | A path                          |
 
 `look`, `report`, `verdict`, `confirm`, `correct`, `apply` and `digests_of` write nothing. `run` is the only call that writes.
 
@@ -189,12 +204,14 @@ japanese True star-ocean-jp-nochip.sfc
   source 6291456 efae37be832d0ea1 False
   patch 3227030 8c3869301f396f44 False
   reads 12582912 e5ba9bef71c8ea31 False
-  writes 12582912 4656c58a296b8901 True
+  writes 12582912 f43b189242e3cca9 True
+  writes 12583424 7d01567db2bb6eba True
 english True star-ocean-en-nochip.sfc
   source 6291456 504050fcbcf1b676 False
   patch 2869793 83b209ef73241fa3 False
   reads 12582912 1bcb3b8b58f19a91 False
-  writes 12582912 3f0af092ae356444 True
+  writes 12582912 6c9e1dbeefc58201 True
+  writes 12583424 24ef02d3c4aa12c0 True
 <Patch Star Ocean no S-DD1/96Mbit hack 1.0, by neviksti>
 The same patch on the DeJap English translation. The two are not interchangeable.
 ```
@@ -319,7 +336,7 @@ Star Ocean shipped on an S-DD1 board, and the chip decompressed graphics on the 
 
 | Field                   | Says                           | Should say                                                 |
 | :---------------------- | :----------------------------- | :--------------------------------------------------------- |
-| Chipset                 | `0x45`, S-DD1 with save memory | `0x00`, no coprocessor                                     |
+| Chipset                 | `0x45`, S-DD1 with save memory | `0x02`, no coprocessor, save memory with a battery         |
 | Declared size           | `0x0D`, 8 megabytes            | `0x0E`, 16 megabytes, the first power of two that holds 12 |
 | Checksum and complement | Cover the old fields           | Cover the new ones                                         |
 
@@ -376,14 +393,14 @@ Six bytes in each of the two header mirrors, at `0x7FC0` and `0xA07FC0`:
 
 | Offset in the mirror | Field               | Before | After      |
 | :------------------- | :------------------ | :----- | :--------- |
-| `0x16`               | Chipset             | `0x45` | `0x00`     |
+| `0x16`               | Chipset             | `0x45` | `0x02`     |
 | `0x17`               | Declared size       | `0x0D` | `0x0E`     |
 | `0x1C`, `0x1D`       | Checksum complement | Old    | Recomputed |
 | `0x1E`, `0x1F`       | Checksum            | Old    | Recomputed |
 
 A test asserts that every byte that moves lies inside a header mirror, and a second correction of a corrected image changes nothing.
 
-The manifest also records, under `supersedes`, the digests this tool wrote before 2026-08-25. Those images carry a checksum computed by a rule that was wrong for a length that is not a power of two. An image matching them is one revision old: run the correction again on the rebuild.
+The manifest also records, under `supersedes`, the digests of two earlier revisions, newest first. Until 2026-10-28 this tool declared chipset `0x00`, which removed the battery along with the S-DD1, and an emulator that keeps save RAM only for a declared battery stopped keeping the saves. Until 2026-08-25 it also computed the checksum by a rule that was wrong for a length that is not a power of two. An image matching either is out of date: run the correction again on the rebuild.
 
 ```python
 from starocean import named
@@ -396,7 +413,7 @@ print(japanese.after["sha256"][:16])
 
 ```
 e5ba9bef71c8ea31
-4656c58a296b8901
+f43b189242e3cca9
 ```
 
 ## Is it right

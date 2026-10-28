@@ -90,7 +90,7 @@ class DigestTest(unittest.TestCase):
 
 
 class CorrectTest(unittest.TestCase):
-    def test_the_coprocessor_claim_is_cleared(self) -> None:
+    def test_the_coprocessor_claim_is_cleared_and_the_battery_kept(self) -> None:
         # Arrange
         image = an_image()
 
@@ -98,7 +98,7 @@ class CorrectTest(unittest.TestCase):
         corrected = starocean.correct(image)
 
         # Assert
-        self.assertEqual(corrected[HEADER + 22], 0x00)
+        self.assertEqual(corrected[HEADER + 22], 0x02)
 
     def test_the_declared_size_is_made_to_match_the_file(self) -> None:
         # Arrange
@@ -416,7 +416,9 @@ class MainTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(code, 0)
-        self.assertEqual((into / edition.writes).read_bytes(), starocean.correct(before))
+        self.assertEqual(
+            (into / starocean.EMULATOR / edition.writes).read_bytes(), starocean.correct(before)
+        )
 
     def test_one_present_and_one_absent_still_corrects_the_one_that_is_here(self) -> None:
         # Arrange

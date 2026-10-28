@@ -11,11 +11,12 @@ sys.path.insert(0, str(ROOT))
 sys.path.append(str(ROOT / "snes-rom-image-python"))
 sys.path.append(str(ROOT / "snes-rom-image-python" / "snes-mapper-python"))
 
-from romimage import rewrite
+from romimage import copier, rewrite
 from romimage.rewrite import NoHeader
 
 from starocean import editions
 from starocean.errors import Corrupt, Missing, NotACartridge, Unexpected, Unrecognised
+from starocean.version import VERSION
 
 DIRECTORY_VARIABLE = "STAR_OCEAN_ROM_DIR"
 
@@ -23,7 +24,9 @@ DEFAULT_SOURCE = ROOT / "external" / "roms"
 
 ALONGSIDE = ROOT.parent / "external" / "roms"
 
-DEFAULT_DESTINATION = ROOT / "dist"
+DEFAULT_DESTINATION = ROOT / "dist" / f"v{VERSION}"
+
+SD2SNES_CHIPSET = 0x45
 
 
 DIRECTORY_VARIABLES = (DIRECTORY_VARIABLE,)
@@ -130,6 +133,34 @@ def apply(image: bytes, edition: editions.Edition) -> bytes:
     return produced
 
 
+def for_sd2snes(produced: bytes, edition: editions.Edition) -> bytes:
+    headed: bytes = copier.for_sd2snes(produced, SD2SNES_CHIPSET)
+    pinned = edition.forms[editions.SD2SNES]
+    found = digests_of(headed)
+    if found[editions.DECIDES] != pinned[editions.DECIDES]:
+        raise Unexpected(
+            f"the sd2snes form of {edition.name} has {editions.DECIDES}"
+            f" {found[editions.DECIDES]}, and the manifest pins {pinned[editions.DECIDES]}"
+        )
+    _cross_check(f"{edition.name} for the sd2snes firmware", pinned, found)
+    return headed
+
+
+def forms_of(produced: bytes, edition: editions.Edition) -> list[tuple[str, bytes]]:
+    plain = [
+        (f"{editions.EMULATOR}/{edition.writes}", produced),
+        (f"{editions.SUPER_EVERDRIVE}/{edition.writes}", produced),
+    ]
+    if editions.SD2SNES not in edition.forms:
+        return plain
+    headed = for_sd2snes(produced, edition)
+    return [
+        *plain,
+        (f"{editions.SD2SNES}/{edition.headed}", headed),
+        (f"{editions.FXPAK}/{edition.headed}", headed),
+    ]
+
+
 def run(edition: editions.Edition, source: Path | str, destination: Path | str) -> Path:
     reading = Path(source) / edition.reads
     if not reading.is_file():
@@ -139,10 +170,11 @@ def run(edition: editions.Edition, source: Path | str, destination: Path | str) 
         )
 
     produced = apply(reading.read_bytes(), edition)
-    Path(destination).mkdir(parents=True, exist_ok=True)
-    writing = Path(destination) / edition.writes
-    writing.write_bytes(produced)
-    return writing
+    for name, written in forms_of(produced, edition):
+        target = Path(destination) / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(written)
+    return Path(destination) / editions.EMULATOR / edition.writes
 
 
 def main(argv: Sequence[str], catalogue: Sequence[editions.Edition] | None = None) -> int:

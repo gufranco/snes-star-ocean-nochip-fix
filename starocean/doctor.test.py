@@ -233,7 +233,7 @@ class EditionTest(unittest.TestCase):
 class ChainTest(unittest.TestCase):
     def test_every_link_of_every_chain_gets_a_line(self) -> None:
         # Arrange
-        wanted = 4 * len(starocean.EDITIONS)
+        wanted = 5 * len(starocean.EDITIONS)
 
         # Act
         found = doctor.check_chain()

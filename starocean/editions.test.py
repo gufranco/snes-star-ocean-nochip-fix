@@ -278,7 +278,9 @@ class ChainTest(unittest.TestCase):
         walked = edition.chain()
 
         # Assert
-        self.assertEqual([step.what for step in walked], ["source", "patch", "reads", "writes"])
+        self.assertEqual(
+            [step.what for step in walked], ["source", "patch", "reads", "writes", "writes"]
+        )
 
     def test_every_step_of_the_chain_carries_a_name_and_a_length(self) -> None:
         # Arrange
@@ -335,7 +337,7 @@ class ChainTest(unittest.TestCase):
         # Assert
         self.assertEqual(found, step.held["crc32"])
 
-    def test_only_the_last_step_is_one_this_repository_produces(self) -> None:
+    def test_only_the_written_steps_are_ones_this_repository_produces(self) -> None:
         # Arrange
         catalogue = starocean.EDITIONS
 
@@ -343,7 +345,7 @@ class ChainTest(unittest.TestCase):
         produced = [[step.what for step in one.chain() if step.produced] for one in catalogue]
 
         # Assert
-        self.assertEqual(produced, [["writes"], ["writes"]])
+        self.assertEqual(produced, [["writes", "writes"], ["writes", "writes"]])
 
 
 class LookupTest(unittest.TestCase):

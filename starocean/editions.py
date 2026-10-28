@@ -17,6 +17,13 @@ DIGEST_WIDTHS = {"crc32": 8, "md5": 32, "sha1": 40, "sha256": 64}
 
 EXPECTED_BYTES = 0xC00000
 
+EMULATOR = "emulator"
+SUPER_EVERDRIVE = "supereverdrive"
+SD2SNES = "sd2snes"
+FXPAK = "fxpak"
+DEVICES = (EMULATOR, SUPER_EVERDRIVE, SD2SNES, FXPAK)
+HEADED_SUFFIX = ".smc"
+
 
 class Patch:
     __slots__ = ("archive", "author", "name", "note", "version", "where")
@@ -68,7 +75,18 @@ class Step:
 
 
 class Edition:
-    __slots__ = ("after", "before", "name", "patch", "reads", "size", "source", "summary", "writes")
+    __slots__ = (
+        "after",
+        "before",
+        "forms",
+        "name",
+        "patch",
+        "reads",
+        "size",
+        "source",
+        "summary",
+        "writes",
+    )
 
     def __init__(
         self,
@@ -81,6 +99,7 @@ class Edition:
         after: Mapping[str, Any],
         source: Mapping[str, Any],
         patch: Mapping[str, Any],
+        forms: Mapping[str, Mapping[str, Any]] | None = None,
     ) -> None:
         self.name = name
         self.summary = summary
@@ -91,13 +110,27 @@ class Edition:
         self.after = after
         self.source = source
         self.patch = patch
+        self.forms = dict(forms or {})
+
+    @property
+    def headed(self) -> str:
+        return Path(self.writes).with_suffix(HEADED_SUFFIX).name
 
     def chain(self) -> tuple[Step, ...]:
+        plain = Step(
+            "writes", f"{EMULATOR}/{self.writes}", dict(self.after, bytes=self.size), produced=True
+        )
+        headed = (
+            (Step("writes", f"{SD2SNES}/{self.headed}", self.forms[SD2SNES], produced=True),)
+            if SD2SNES in self.forms
+            else ()
+        )
         return (
             Step("source", self.source["name"], self.source),
             Step("patch", self.patch["name"], self.patch),
             Step("reads", self.reads, dict(self.before, bytes=self.size)),
-            Step("writes", self.writes, dict(self.after, bytes=self.size), produced=True),
+            plain,
+            *headed,
         )
 
     @override
@@ -132,6 +165,7 @@ def load(path: Path | str | None = None) -> tuple[Edition, ...]:
             after=entry["after"],
             source=entry["source"],
             patch=entry["patch"],
+            forms=entry.get("forms"),
         )
         for entry in held["editions"]
     )

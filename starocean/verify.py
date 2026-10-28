@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from starocean import editions
+from starocean.version import VERSION
 
 ABSENT = "absent"
 MATCHES = "matches"
@@ -22,7 +23,7 @@ WRONG = "wrong"
 
 DEFAULT_SOURCE = ROOT / "external" / "roms"
 
-DEFAULT_DESTINATION = ROOT / "dist"
+DEFAULT_DESTINATION = ROOT / "dist" / f"v{VERSION}"
 
 SHOWN = 16
 
