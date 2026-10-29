@@ -4,9 +4,11 @@ nevikstiによる2つの96 Mbit版Star Oceanリビルドのためのヘッダー
 
 [English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
 
-[![CI](https://github.com/gufranco/snes-star-ocean-nochip-fix/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/snes-star-ocean-nochip-fix/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![ci](https://img.shields.io/github/actions/workflow/status/gufranco/snes-star-ocean-nochip-fix/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/gufranco/snes-star-ocean-nochip-fix/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/gufranco/snes-star-ocean-nochip-fix?style=flat-square&label=release)](https://github.com/gufranco/snes-star-ocean-nochip-fix/releases/latest)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)](https://github.com/gufranco/snes-star-ocean-nochip-fix/actions/workflows/ci.yml)
+[![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/snes-star-ocean-nochip-fix?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/snes-star-ocean-nochip-fix)
+[![license](https://img.shields.io/github/license/gufranco/snes-star-ocean-nochip-fix?style=flat-square&label=license)](LICENSE)
 
 **2**つのエディション、イメージごとに変更されるのは**12**バイトでそれ以外は変更なし、2つのチェーン全体で**40**個の固定ダイジェスト、不一致**0**件、**703**件のテスト、ステートメントとブランチの**100%**カバレッジ、依存関係なし
 
